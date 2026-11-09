@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>CORREDORES</title>
+<style>
+:root{--y:#ffd23f;--r:#ff4d6d;--b:#2ec4ff;--p:#7b2ff7;--ink:#1b1b3a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#8fd3ff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;touch-action:none}
+body.multi{background:#12122b}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;color:#fff;
+  background:radial-gradient(circle at 50% 28%,rgba(123,47,247,.55),rgba(27,27,58,.88))}
+/* telas que podem ser maiores que a janela: centralizam quando cabem, rolam quando não cabem */
+.screen.scroll{justify-content:flex-start;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.screen.scroll>:first-child{margin-top:auto}
+.screen.scroll>:last-child{margin-bottom:auto}
+h1{margin:0;font-size:clamp(42px,10vw,88px);font-weight:900;line-height:.95;letter-spacing:1px;text-shadow:0 5px 0 var(--p),0 12px 22px rgba(0,0,0,.35)}
+h1 em{font-style:normal;color:var(--y)}
+h2{margin:0;font-size:clamp(34px,8vw,62px);font-weight:900;color:var(--r);text-shadow:0 4px 0 #fff3,0 8px 18px rgba(0,0,0,.4)}
+h2.win{color:var(--y)}
+p{margin:0}
+.btn{border:0;border-radius:999px;padding:16px 46px;font:900 24px "Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink);cursor:pointer;
+  background:linear-gradient(#ffe36e,#ffb703);box-shadow:0 6px 0 #c98400,0 14px 26px rgba(0,0,0,.35);transition:transform .08s,box-shadow .08s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 #c98400,0 6px 12px rgba(0,0,0,.35)}
+.btn:disabled{filter:grayscale(.7);cursor:wait}
+.btn:focus-visible{outline:4px solid #fff;outline-offset:4px}
+.btn.alt{background:linear-gradient(#fff,#d5d5ee);box-shadow:0 6px 0 #8b8bb0,0 14px 26px rgba(0,0,0,.35)}
+.btn.alt:active{box-shadow:0 1px 0 #8b8bb0,0 6px 12px rgba(0,0,0,.35)}
+.btn.danger{background:linear-gradient(#ff7a90,#ff4d6d);color:#fff;box-shadow:0 6px 0 #b3203d,0 14px 26px rgba(0,0,0,.35)}
+.btn.danger:active{box-shadow:0 1px 0 #b3203d,0 6px 12px rgba(0,0,0,.35)}
+.btn.sm{font-size:18px;padding:12px 28px}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+#status{min-height:22px;max-width:520px;font-size:15px;color:#d9d9ff}
+#status.warn{color:#ffd23f}
+.help{max-width:560px;font-size:15px;line-height:1.5;color:#e6e6ff}
+.stat{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.stat div{min-width:110px;padding:10px 16px;border-radius:16px;background:#ffffff1f;font-size:14px}
+.stat b{display:block;font-size:28px;color:var(--y)}
+#record{color:var(--y);font-weight:900;font-size:20px}
+/* Menu: seletores */
+.lbl{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#cfcfff;font-weight:900;margin-bottom:-6px}
+.seg{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:680px}
+.chip{border:3px solid #ffffff55;border-radius:16px;padding:10px 18px;min-width:118px;font:900 18px "Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#fff;background:#ffffff1a;cursor:pointer;transition:background .1s,transform .1s}
+.chip small{display:block;font-size:12px;opacity:.85;font-weight:700;margin-top:2px}
+.chip:hover{background:#ffffff33}
+.chip.on{background:linear-gradient(#ffe36e,#ffb703);color:var(--ink);border-color:#fff;box-shadow:0 4px 0 #c98400}
+.chip:focus-visible{outline:4px solid #fff;outline-offset:3px}
+/* Configurações */
+.kgrid{display:grid;grid-template-columns:auto repeat(4,minmax(70px,1fr));gap:8px;align-items:center;max-width:640px;width:100%}
+.kgrid .h{font-weight:900;padding:6px 8px;border-radius:999px;color:var(--ink);font-size:14px}
+.kgrid .al{text-align:right;font-weight:900;color:#e6e6ff;font-size:14px;padding-right:6px}
+.keybtn{font:900 18px "Trebuchet MS","Segoe UI",system-ui,sans-serif;border:3px solid #ffffff66;border-radius:12px;background:#ffffff1f;color:#fff;padding:10px 4px;cursor:pointer;min-width:0}
+.keybtn:hover{background:#ffffff40}
+.keybtn.cap{background:var(--y);color:var(--ink);border-color:#fff;animation:blink .8s infinite}
+.keybtn:focus-visible{outline:4px solid #fff;outline-offset:2px}
+@keyframes blink{50%{opacity:.55}}
+#setMsg{min-height:22px;max-width:560px;font-size:15px;color:var(--y);font-weight:700}
+@media (max-width:520px){.keybtn{font-size:14px;padding:8px 2px}.kgrid .al{font-size:12px}.kgrid .h{font-size:11px;padding:4px}}
+/* HUD solo */
+#hud{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:calc(12px + env(safe-area-inset-top)) 14px 0;pointer-events:none;color:#fff;font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.pill{padding:8px 16px;border-radius:999px;background:rgba(27,27,58,.62);font-size:clamp(16px,4vw,24px);white-space:nowrap}
+.pill.coin{background:linear-gradient(#ffd23f,#ffa600);color:var(--ink);text-shadow:none;transition:transform .12s}
+.pill.coin.pop{transform:scale(1.25)}
+#score{font-size:clamp(26px,7vw,44px);text-align:center;line-height:1}
+#score small{display:block;font-size:12px;opacity:.85;margin-top:4px}
+body:not(.playing):not(.paused) #hud,body.multi #hud{display:none}
+#sbar{position:fixed;top:0;left:0;right:0;height:6px;z-index:6;background:rgba(0,0,0,.25);pointer-events:none}
+#sbar i{display:block;height:100%;width:0;background:var(--y)}
+body:not(.solo) #sbar,body:not(.playing):not(.paused) #sbar{display:none}
+/* HUD multiplayer */
+#pHuds{position:fixed;inset:0;z-index:5;pointer-events:none;display:none;color:#fff;font-weight:900;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+body.multi.playing #pHuds,body.multi.paused #pHuds,body.multi.results #pHuds{display:block}
+.phud{position:absolute;padding:8px 10px 0}
+.phud .card{background:rgba(27,27,58,.68);border-radius:14px;padding:6px 10px 8px;border-left:6px solid var(--pc)}
+.ph-top{display:flex;align-items:center;gap:8px;font-size:clamp(12px,1.5vw,18px);white-space:nowrap}
+.ph-tag{background:var(--pc);color:var(--ink);padding:1px 9px;border-radius:999px;text-shadow:none}
+.ph-rk{opacity:.9}
+.ph-d{margin-left:auto}
+.ph-bar{height:9px;border-radius:99px;background:#ffffff33;overflow:hidden;margin-top:5px}
+.ph-bar i{display:block;height:100%;width:0;background:var(--pc);border-radius:99px}
+.ph-sub{display:flex;justify-content:space-between;font-size:clamp(11px,1.2vw,14px);margin-top:4px}
+.panel{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:clamp(10px,2vw,24px);background:linear-gradient(160deg,#2c1f78,#1b1b3a)}
+.pn-title{font-size:clamp(14px,2vw,24px);display:flex;justify-content:space-between;gap:8px;color:var(--y)}
+.prow{--pc:#fff}
+.prow .pr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:clamp(12px,1.5vw,18px)}
+.prow .ph-bar{height:12px}
+#panelCenter{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(230px,46vw);padding:8px 10px;border-radius:16px;background:rgba(27,27,58,.82);border:2px solid #ffffff44;display:flex;flex-direction:column;gap:5px;font-size:12px}
+#panelCenter .pc-title{display:flex;justify-content:space-between;color:var(--y);font-size:12px}
+.crow{display:grid;grid-template-columns:24px 1fr 38px;gap:6px;align-items:center}
+.crow b{background:var(--pc);color:var(--ink);border-radius:999px;text-align:center;font-size:11px;padding:1px 0;text-shadow:none}
+.crow .ph-bar{margin-top:0;height:8px}
+.crow span{text-align:right}
+/* Resultados */
+#rList{display:flex;flex-direction:column;gap:8px;width:min(560px,100%)}
+.rrow{--pc:#fff;display:grid;grid-template-columns:44px 1fr auto;grid-template-areas:"m n d" "m x x";gap:2px 10px;align-items:center;text-align:left;padding:10px 14px;border-radius:16px;background:#ffffff1f;border-left:8px solid var(--pc)}
+.rrow.first{background:#ffd23f33;box-shadow:0 0 0 2px var(--y)}
+.rm{grid-area:m;font-size:28px;text-align:center}
+.rn{grid-area:n;font-weight:900;font-size:18px}
+.rd{grid-area:d;font-weight:900;color:var(--y);font-size:18px}
+.rx{grid-area:x;font-size:13px;color:#d9d9ff}
+/* Pausa */
+#pauseBtn{position:fixed;z-index:7;width:44px;height:44px;border-radius:50%;border:3px solid #fff8;background:rgba(27,27,58,.55);color:#fff;font-size:18px;font-weight:900;display:none;place-items:center;cursor:pointer;padding:0}
+body.playing #pauseBtn{display:grid}
+body.solo #pauseBtn{top:calc(88px + env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+body.multi #pauseBtn{bottom:calc(8px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%)}
+/* Controles de toque */
+#touch{display:none;position:fixed;left:0;right:0;bottom:0;z-index:6;justify-content:space-between;padding:0 18px calc(18px + env(safe-area-inset-bottom));pointer-events:none}
+@media (pointer:coarse){body.playing #touch{display:flex}}
+body.editTouch #touch{display:flex}
+#touch .grp{display:flex;gap:14px;pointer-events:auto}
+.tb{width:74px;height:74px;border-radius:50%;border:3px solid #fff8;background:rgba(27,27,58,.55);color:#fff;font-size:30px;font-weight:900;display:grid;place-items:center;backdrop-filter:blur(3px);padding:0}
+.tb:active{background:rgba(123,47,247,.85)}
+body.editTouch .tb{outline:3px dashed var(--y);outline-offset:3px;cursor:grab;touch-action:none}
+#editBar{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:12;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;padding:10px 14px;border-radius:20px;background:rgba(27,27,58,.88);color:#fff;font-weight:900;max-width:96vw}
+@media (prefers-reduced-motion:reduce){.btn,.pill.coin,.chip{transition:none}.keybtn.cap{animation:none}}
+/* Poderes */
+#fxLayer{position:fixed;inset:0;z-index:4;pointer-events:none;display:none}
+body.multi.playing #fxLayer,body.multi.paused #fxLayer{display:block}
+.fxv{position:absolute;overflow:hidden}
+.fx-dark{position:absolute;inset:0;opacity:0;transition:opacity .25s;background:radial-gradient(ellipse 60% 55% at 50% 66%,rgba(0,0,10,.15) 0,rgba(0,0,10,.9) 70%,rgba(0,0,10,.96) 100%)}
+.fx-dark.on{opacity:1}
+.fx-flash{position:absolute;inset:0;background:#fff;opacity:0}
+.fx-flash.go{animation:flash .6s ease-out}
+@keyframes flash{0%{opacity:.95}15%{opacity:.2}30%{opacity:.8}100%{opacity:0}}
+.fx-toast{position:absolute;left:0;right:0;top:36%;text-align:center;font-weight:900;font-size:clamp(16px,2.6vw,32px);color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 14px var(--pc);opacity:0}
+.fx-toast.go{animation:toast 1.2s ease-out}
+@keyframes toast{0%{opacity:0;transform:scale(.6)}15%{opacity:1;transform:scale(1.1)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-14px)}}
+.pw{display:flex;flex-direction:column;gap:4px;margin-top:6px;align-items:flex-start}
+.pw-slot{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 8px 3px 6px;border-radius:12px;background:rgba(27,27,58,.75);border:2px solid var(--pc);font-size:clamp(11px,1.3vw,15px);white-space:nowrap}
+.pw-slot.empty{opacity:.55;border-style:dashed}
+.pw-ic{font-size:clamp(16px,2vw,24px);line-height:1}
+.pw-key{background:#fff;color:var(--ink);border-radius:6px;padding:0 6px;text-shadow:none;min-width:1.6em;text-align:center}
+.pw-slot.ready{animation:glow .8s infinite alternate}
+.pw-slot.pop{animation:pop .5s}
+@keyframes glow{to{box-shadow:0 0 12px 2px var(--pc)}}
+@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.35);box-shadow:0 0 18px 4px var(--pc)}100%{transform:scale(1)}}
+.pw-fx{display:flex;gap:4px;flex-wrap:wrap}
+.fxc{display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:10px;background:rgba(27,27,58,.75);font-size:clamp(10px,1.3vw,15px)}
+.fxc.bad{background:rgba(160,20,50,.8)}.fxc.good{background:rgba(20,120,60,.8)}
+.fxc i{display:block;width:clamp(28px,4vw,48px);height:5px;border-radius:99px;background:#ffffff40;overflow:hidden}
+.fxc i b{display:block;height:100%;background:#fff}
+#bP{position:absolute;right:18px;bottom:calc(112px + env(safe-area-inset-bottom));pointer-events:auto}
+body.solo.playing #bP{display:none}
+@media (prefers-reduced-motion:reduce){.pw-slot.ready,.pw-slot.pop{animation:none}}
+/* Personalização e áudio */
+.col{display:flex;flex-direction:column;gap:8px;max-width:700px;width:100%}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;max-width:700px;width:100%}
+.slot{background:#ffffff1a;border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:900;font-size:14px}
+.slot small{opacity:.8;font-weight:700;word-break:break-all;max-width:100%}
+.thumb{width:84px;height:84px;border-radius:50%;background:#ffffff22 center/cover;border:3px solid #ffffff55;display:grid;place-items:center;font-size:30px;color:#fff9}
+.mrow,.arow,.prow2{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between;background:#ffffff1a;border-radius:14px;padding:8px 12px;width:100%;font-weight:900;text-align:left}
+.mrow .nm,.arow .nm{flex:1 1 140px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.arow .nm small{display:block;opacity:.75;font-size:12px;font-weight:700}
+.btn.xs{font-size:14px;padding:8px 16px;box-shadow:0 4px 0 #c98400,0 8px 14px rgba(0,0,0,.3)}
+.btn.alt.xs{box-shadow:0 4px 0 #8b8bb0,0 8px 14px rgba(0,0,0,.3)}
+.btn.danger.xs{box-shadow:0 4px 0 #b3203d,0 8px 14px rgba(0,0,0,.3)}
+.vbar{width:130px;height:14px;border-radius:99px;background:#ffffff33;overflow:hidden}
+.vbar i{display:block;height:100%;background:var(--y)}
+.vctl{display:flex;align-items:center;gap:8px}
+.vctl .pc{min-width:44px;text-align:right}
+.chip.sm{min-width:0;padding:6px 12px;font-size:14px}
+#cuMsg{min-height:22px;max-width:560px;font-size:15px;color:var(--y);font-weight:700}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="menu solo">
+<canvas id="c"></canvas>
+
+<div id="sbar" class="hidden"><i></i></div>
+<div id="hud">
+  <div class="pill coin" id="coinPill">🪙 <span id="hCoins">0</span></div>
+  <div id="score">0<small>pontos</small></div>
+  <div class="pill"><span id="hDist">0</span> m</div>
+</div>
+
+<div id="fxLayer"></div>
+
+<div id="pHuds">
+  <div id="panelTrio" class="panel hidden">
+    <div class="pn-title"><span>🏁 CORRIDA</span><span id="ptInfo"></span></div>
+    <div id="ptRows"></div>
+  </div>
+  <div id="panelCenter" class="hidden">
+    <div class="pc-title"><span id="pcDist">🏁</span><span id="pcTime">⏱ 0:00</span></div>
+    <div id="pcRows"></div>
+  </div>
+</div>
+
+<button id="pauseBtn" aria-label="Pausar">⏸</button>
+
+<div id="menu" class="screen scroll">
+  <h1 aria-label="CORREDORES">CORRE<em>DORES</em></h1>
+  <p id="status">Carregando Ash…</p>
+  <div class="lbl">Jogadores</div>
+  <div class="seg" id="modeSeg">
+    <button class="chip on" data-n="1">Modo Solo<small>1 jogador</small></button>
+    <button class="chip" data-n="2">Dupla<small>2 jogadores</small></button>
+    <button class="chip" data-n="3">Trio<small>3 jogadores</small></button>
+    <button class="chip" data-n="4">Quarteto<small>4 jogadores</small></button>
+  </div>
+  <div class="lbl">Distância</div>
+  <div class="seg" id="distSeg">
+    <button class="chip on" data-d="inf">∞ Infinito<small>modo clássico</small></button>
+    <button class="chip" data-d="fast">⚡ Rápido<small>3.000 m</small></button>
+    <button class="chip" data-d="mid">🏃 Médio<small>5.000 m</small></button>
+    <button class="chip" data-d="long">🏔 Longo<small>10.000 m</small></button>
+  </div>
+  <div class="row">
+    <button id="play" class="btn" disabled>Carregando…</button>
+    <button id="btnSettings" class="btn alt">⚙ Configurações</button>
+  </div>
+  <div class="row">
+    <button id="btnCustom" class="btn alt sm">🎨 PERSONALIZAÇÃO</button>
+    <button id="btnAudio" class="btn alt sm">🔊 CONFIGURAÇÕES DE ÁUDIO</button>
+  </div>
+  <p>🏆 Melhor pontuação (solo): <b id="mBest">0</b></p>
+  <div id="help" class="help"></div>
+</div>
+
+<div id="settings" class="screen scroll hidden">
+  <h2 class="win">⚙ Configurações</h2>
+  <p class="help">Clique em uma tecla para trocá-la e pressione a nova tecla. <b>Esc</b> cancela. Se a tecla já estiver em uso, as duas são trocadas (sem conflitos).</p>
+  <div id="keyGrid" class="kgrid"></div>
+  <p id="setMsg"></p>
+  <div class="row">
+    <button id="btnTouch" class="btn alt sm">📱 Reposicionar botões virtuais</button>
+    <button id="btnResetPower" class="btn alt sm">⚡ Restaurar teclas de poder</button>
+    <button id="btnReset" class="btn danger sm">RESTAURAR PADRÃO</button>
+  </div>
+  <button id="setBack" class="btn">← Voltar</button>
+</div>
+
+<div id="custom" class="screen scroll hidden">
+  <h2 class="win">🎨 Personalização</h2>
+  <div class="lbl">Skins</div>
+  <p class="help">Importe até 4 imagens (PNG ou JPG). A foto aparece num medalhão sobre o personagem, sem alterar o modelo. No modo Solo vale a skin do Jogador 1.</p>
+  <div id="skinSlots" class="slots"></div>
+  <div id="skinPick" class="col"></div>
+  <div class="lbl">Músicas</div>
+  <p class="help">Importe até 4 músicas (MP3, WAV ou OGG). Elas ficam salvas neste navegador.</p>
+  <div id="musicSlots" class="col"></div>
+  <p id="cuMsg"></p>
+  <button id="cuBack" class="btn">← Voltar</button>
+  <input type="file" id="skinFile" class="hidden" accept=".png,.jpg,.jpeg,image/png,image/jpeg">
+  <input type="file" id="musicFile" class="hidden" accept=".mp3,.wav,.ogg,audio/mpeg,audio/wav,audio/ogg">
+</div>
+
+<div id="audio" class="screen scroll hidden">
+  <h2 class="win">🔊 Configurações de áudio</h2>
+  <p class="help">Cada controle é independente: desligar os efeitos não desliga a música, e vice-versa.</p>
+  <div id="audRows" class="col"></div>
+  <button id="auBack" class="btn">← Voltar</button>
+</div>
+
+<div id="over" class="screen scroll hidden">
+  <h2 id="oTitle">Game Over</h2>
+  <p id="record" class="hidden">🎉 Novo recorde!</p>
+  <div class="stat">
+    <div>Pontos<b id="oScore">0</b></div>
+    <div>Distância<b id="oDist">0 m</b></div>
+    <div>Moedas<b id="oCoins">0</b></div>
+  </div>
+  <p>🏆 Melhor pontuação: <b id="oBest">0</b></p>
+  <div class="row">
+    <button id="again" class="btn">Jogar novamente</button>
+    <button id="oMenu" class="btn alt">Voltar ao menu</button>
+  </div>
+</div>
+
+<div id="results" class="screen scroll hidden">
+  <h2 id="rTitle" class="win">Resultado</h2>
+  <p id="rSub" class="help"></p>
+  <div id="rList"></div>
+  <div class="row">
+    <button id="rAgain" class="btn">Jogar novamente</button>
+    <button id="rMenu" class="btn alt">Voltar ao menu</button>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden">
+  <h2 class="win">Pausado</h2>
+  <div class="row">
+    <button id="resume" class="btn">▶ Continuar</button>
+    <button id="pMenu" class="btn alt">Voltar ao menu</button>
+  </div>
+  <p class="help">Esc ou P também pausam / continuam.</p>
+</div>
+
+<div id="editBar" class="hidden">
+  <span>Arraste os botões para onde quiser</span>
+  <button id="editReset" class="btn alt sm">Posição padrão</button>
+  <button id="editDone" class="btn sm">Concluir</button>
+</div>
+
+<div id="touch">
+  <div class="grp"><button class="tb" id="bL" aria-label="Esquerda">◀</button><button class="tb" id="bR" aria-label="Direita">▶</button></div>
+  <div class="grp"><button class="tb" id="bS" aria-label="Deslizar">▼</button><button class="tb" id="bJ" aria-label="Pular">▲</button></div>
+  <button class="tb" id="bP" aria-label="Poder">⚡</button>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+/* ================= CONFIGURAÇÃO ================= */
+const CFG = {
+  MODEL_URL: './ash.glb',          // modelo do Ash (mesma pasta do index.html)
+  MODEL_HEIGHT: 1.8,               // altura final do personagem em unidades do mundo
+  MODEL_YAW: Math.PI,              // gire o modelo (ex.: 0) se ele aparecer de frente para a câmera
+  // Arquivos de animação FUTUROS (GLB com a mesma armature do Ash). Deixe null até existirem.
+  // Exemplo: running: './animations/running.glb'
+  ANIMATION_FILES: { idle: null, running: null, jumping: null, sliding: null },
+  LANE_X: [-2.4, 0, 2.4],
+  SEG_LEN: 40, NSEG: 7, SPAWN_Z: -140,
+  BASE_SPEED: 14, MAX_SPEED: 34, ACCEL: 0.012,
+  GRAVITY: 32, JUMP_V: 11.5, SLIDE_TIME: 0.7,
+  STAND_H: 1.8, SLIDE_H: 0.8,
+  // Corridas
+  RACES: { fast: 3000, mid: 5000, long: 10000 },   // metros
+  HIT_TIME: 1.6,    // multiplayer: tempo para recuperar a velocidade depois de bater
+  HIT_MIN: 0.25,    // multiplayer: fração da velocidade logo após a batida
+  INV_TIME: 0.9,    // multiplayer: invencibilidade curta depois de bater
+  TIE_EPS: 0.05,    // diferença (s) máxima entre dois cruzamentos para contar como empate
+  GRACE: 0.12       // multiplayer: janela (s) após o 1º cruzamento para registrar empates
+};
+// Nomes de clipes embutidos no GLB que serão reconhecidos automaticamente
+const CLIP_PATTERNS = { idle: /idle|stand/i, running: /run|jog/i, jumping: /jump/i, sliding: /slid/i };
+
+/* ================= UTILIDADES ================= */
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = n => n.toLocaleString('pt-BR');
+const fmtTime = t => { const s = Math.floor(t); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const store = {
+  get() { try { return +localStorage.getItem('ashRunnerBest') || 0; } catch { return 0; } },
+  set(v) { try { localStorage.setItem('ashRunnerBest', String(v)); } catch {} }
+};
+function mulberry32(a) { // gerador pseudo-aleatório com semente (mesmo percurso para todos os jogadores)
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* ================= CONTROLES CONFIGURÁVEIS ================= */
+const CONFIG_KEY = 'corredoresConfig';
+const ACTIONS = [['left', 'Esquerda'], ['right', 'Direita'], ['jump', 'Pular'], ['slide', 'Deslizar'], ['power', 'Poder']];
+const PCOLOR = ['#ff4d6d', '#2ec4ff', '#ffd23f', '#5ce05f'];
+const DEFAULT_KEYS = [
+  { left: 'KeyA', right: 'KeyD', jump: 'KeyW', slide: 'KeyS', power: 'KeyE' },
+  { left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp', slide: 'ArrowDown', power: 'KeyY' },
+  { left: 'KeyJ', right: 'KeyL', jump: 'KeyI', slide: 'KeyK', power: 'KeyO' },
+  { left: 'KeyF', right: 'KeyH', jump: 'KeyT', slide: 'KeyG', power: 'Digit0' }
+];
+const TOUCH_IDS = ['bL', 'bR', 'bS', 'bJ', 'bP'];
+const TB = 74; // tamanho dos botões virtuais (px)
+const cloneKeys = k => k.map(o => ({ ...o }));
+
+function loadConfig() {
+  const c = { keys: cloneKeys(DEFAULT_KEYS), touch: {} };
+  try {
+    const raw = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
+    if (raw && Array.isArray(raw.keys)) {
+      const keys = cloneKeys(DEFAULT_KEYS);
+      for (let p = 0; p < 4; p++) for (const [a] of ACTIONS) {
+        const v = raw.keys[p] && raw.keys[p][a];
+        if (typeof v === 'string' && v.length > 0 && v.length < 24) keys[p][a] = v;
+      }
+      const mv = keys.flatMap(k => ACTIONS.filter(([a]) => a !== 'power').map(([a]) => k[a]));
+      if (new Set(mv).size === mv.length) { // ignora configurações com teclas repetidas
+        const used = new Set(mv), pool = ['KeyE', 'KeyY', 'KeyO', 'Digit0', 'KeyQ', 'KeyU', 'KeyR', 'KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM'];
+        for (let p = 0; p < 4; p++) { // tecla de poder em conflito com configuração antiga: usa a próxima livre
+          let v = keys[p].power; if (used.has(v)) v = pool.find(k => !used.has(k));
+          keys[p].power = v; used.add(v);
+        }
+        c.keys = keys;
+      }
+    }
+    if (raw && raw.touch && typeof raw.touch === 'object') for (const id of TOUCH_IDS) {
+      const t = raw.touch[id];
+      if (t && Number.isFinite(t.x) && Number.isFinite(t.y)) c.touch[id] = { x: clamp(t.x, 0, 1), y: clamp(t.y, 0, 1) };
+    }
+  } catch {}
+  return c;
+}
+let cfg = loadConfig();
+function saveConfig() { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch {} }
+
+function keyName(code) {
+  const m = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Espaço', Comma: ',', Period: '.', Semicolon: ';', Slash: '/',
+    Backslash: '\\', Quote: "'", BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`', ShiftLeft: 'Shift E', ShiftRight: 'Shift D' };
+  if (m[code]) return m[code];
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  if (/^Numpad/.test(code)) return 'Num ' + code.slice(6);
+  return code;
+}
+function allowedKey(code) {
+  if (!code || code === 'Unidentified') return false;
+  if (['Escape', 'Tab', 'ContextMenu', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'OSLeft', 'OSRight'].includes(code)) return false;
+  if (/^F\d+$/.test(code)) return false;
+  return true;
+}
+
+let keymap = new Map(); // code -> { p: jogador, a: ação }
+function rebuildKeymap() {
+  keymap = new Map();
+  cfg.keys.forEach((k, p) => ACTIONS.forEach(([a]) => keymap.set(k[a], { p, a })));
+}
+rebuildKeymap();
+
+/* ================= RENDERER ================= */
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+} catch (e) {
+  $('status').textContent = '⚠️ Seu navegador não suporta WebGL. Tente atualizar ou usar outro navegador.';
+  $('status').className = 'warn';
+  $('play').textContent = 'Indisponível';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const SKY = 0x8fd3ff;
+
+/* ================= CENÁRIO INFINITO ================= */
+const L = CFG.SEG_LEN, NSEG = CFG.NSEG;
+const M = {
+  road: new THREE.MeshLambertMaterial({ color: 0x3a3f52 }),
+  grass: new THREE.MeshLambertMaterial({ color: 0x5ccf5f }),
+  curb: new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }),
+  line: new THREE.MeshBasicMaterial({ color: 0xffe066 }),
+  edge: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+  trunk: new THREE.MeshLambertMaterial({ color: 0x8b5a2b }),
+  leaf: [0x2ecc71, 0x1fa65a, 0xa5d33f, 0xff9f43].map(c => new THREE.MeshLambertMaterial({ color: c })),
+  rock: new THREE.MeshLambertMaterial({ color: 0x9aa3b2 }),
+  pole: new THREE.MeshLambertMaterial({ color: 0x555b6e }),
+  lamp: new THREE.MeshBasicMaterial({ color: 0xfff3a0 })
+};
+const G = {
+  trunk: new THREE.CylinderGeometry(0.25, 0.35, 1.6, 6),
+  cone: new THREE.ConeGeometry(1.5, 2.4, 7),
+  rock: new THREE.DodecahedronGeometry(0.7),
+  pole: new THREE.CylinderGeometry(0.07, 0.09, 4, 6),
+  lamp: new THREE.SphereGeometry(0.28, 10, 8),
+  box: new THREE.BoxGeometry(1, 1, 1),
+  road: new THREE.PlaneGeometry(7.6, L),      // compartilhadas entre todos os segmentos e jogadores
+  grass: new THREE.PlaneGeometry(60, L)
+};
+function box(mat, sx, sy, sz, x, y, z) {
+  const m = new THREE.Mesh(G.box, mat);
+  m.scale.set(sx, sy, sz); m.position.set(x, y, z);
+  return m;
+}
+function makeTree() {
+  const g = new THREE.Group(), leaf = M.leaf[(Math.random() * M.leaf.length) | 0];
+  const t = new THREE.Mesh(G.trunk, M.trunk); t.position.y = 0.8;
+  const a = new THREE.Mesh(G.cone, leaf); a.position.y = 2.5;
+  const b = new THREE.Mesh(G.cone, leaf); b.scale.setScalar(0.7); b.position.y = 3.8;
+  g.add(t, a, b);
+  return g;
+}
+function scatter(o) {
+  o.position.set(o.userData.side * rand(7.5, 24), 0, rand(-L / 2, L / 2));
+  o.scale.setScalar(rand(0.8, 1.6));
+  o.rotation.y = rand(0, 6.28);
+}
+function makeSegment(trees = 6, rocks = 2) {
+  const s = new THREE.Group();
+  const road = new THREE.Mesh(G.road, M.road);
+  road.rotation.x = -Math.PI / 2; s.add(road);
+  for (const lx of [-1.2, 1.2]) for (let k = 0; k < 5; k++)
+    s.add(box(M.line, 0.12, 0.02, 3, lx, 0.015, -L / 2 + 4 + k * 8));
+  for (const side of [-1, 1]) {
+    const grass = new THREE.Mesh(G.grass, M.grass);
+    grass.rotation.x = -Math.PI / 2; grass.position.set(side * (3.8 + 30), -0.02, 0); s.add(grass);
+    s.add(box(M.curb, 0.3, 0.15, L, side * 3.9, 0.07, 0));
+    s.add(box(M.edge, 0.12, 0.02, L, side * 3.5, 0.015, 0));
+    // poste de luz
+    const pole = new THREE.Mesh(G.pole, M.pole); pole.position.set(side * 4.7, 2, -10); s.add(pole);
+    const lamp = new THREE.Mesh(G.lamp, M.lamp); lamp.position.set(side * 4.7, 4.1, -10); s.add(lamp);
+  }
+  s.userData.decor = [];
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < trees; i++) { const t = makeTree(); t.userData.side = side; scatter(t); s.add(t); s.userData.decor.push(t); }
+    for (let i = 0; i < rocks; i++) { const r = new THREE.Mesh(G.rock, M.rock); r.userData.side = side; scatter(r); r.position.y = 0.2; s.add(r); s.userData.decor.push(r); }
+  }
+  return s;
+}
+
+/* ================= OBSTÁCULOS E MOEDAS ================= */
+const OM = {
+  low: new THREE.MeshLambertMaterial({ color: 0xff7b00 }),
+  stripe: new THREE.MeshLambertMaterial({ color: 0xffffff }),
+  tall: new THREE.MeshLambertMaterial({ color: 0x6a4cff }),
+  tallStripe: new THREE.MeshLambertMaterial({ color: 0xffd23f }),
+  bar: new THREE.MeshLambertMaterial({ color: 0xff4d6d }),
+  post: new THREE.MeshLambertMaterial({ color: 0x444a5e }),
+  coin: new THREE.MeshLambertMaterial({ color: 0xffc400, emissive: 0x996600 })
+};
+const coinGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 20).rotateX(Math.PI / 2);
+function hazardTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = '#ffd23f'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#1b1b1b';
+  for (let i = -1; i < 3; i++) { g.beginPath(); g.moveTo(i * 32, 64); g.lineTo(i * 32 + 16, 64); g.lineTo(i * 32 + 80, 0); g.lineTo(i * 32 + 64, 0); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 1); return t;
+}
+OM.haz = new THREE.MeshLambertMaterial({ map: hazardTex() });
+OM.warn = new THREE.MeshBasicMaterial({ color: 0xff7a00 });
+const CONT_COLORS = ['#d64545', '#2f6fd6', '#2fa65a', '#e08a1e'], contCache = {};
+function contMats(ci, len) { // container: lateral corrugada, teto mais claro, extremidades lisas
+  const k = ci + '_' + len; if (contCache[k]) return contCache[k];
+  const col = CONT_COLORS[ci], c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = col; g.fillRect(0, 0, 64, 64);
+  for (let i = 0; i < 4; i++) { g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(i * 16 + 12, 0, 4, 64); g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(i * 16 + 8, 0, 4, 64); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(len, 1);
+  const side = new THREE.MeshLambertMaterial({ map: t });
+  const top = new THREE.MeshLambertMaterial({ color: new THREE.Color(col).offsetHSL(0, 0, 0.14) });
+  const end = new THREE.MeshLambertMaterial({ color: new THREE.Color(col).multiplyScalar(0.7) });
+  return contCache[k] = [side, side, top, end, end, end];
+}
+function qTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 128, 128); gr.addColorStop(0, '#9d5cff'); gr.addColorStop(1, '#4b1fd1');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#ffd23f'; g.lineWidth = 10; g.strokeRect(5, 5, 118, 118);
+  g.fillStyle = '#ffd23f'; g.font = '900 96px "Trebuchet MS",Arial,sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 64, 70);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const PB = {
+  mat: new THREE.MeshBasicMaterial({ map: qTex() }), geo: new THREE.BoxGeometry(0.9, 0.9, 0.9),
+  eg: new THREE.EdgesGeometry(new THREE.BoxGeometry(1.06, 1.06, 1.06)), lm: new THREE.LineBasicMaterial({ color: 0xffffff }),
+  beam: new THREE.CylinderGeometry(0.5, 0.5, 7, 12, 1, true), bm: new THREE.MeshBasicMaterial({ color: 0xffe36e, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }),
+  ring: new THREE.RingGeometry(0.55, 0.95, 24), rm: new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.75, side: THREE.DoubleSide }),
+  bolt: new THREE.MeshBasicMaterial({ color: 0xffffff }), glow: new THREE.MeshBasicMaterial({ color: 0xfff27a, transparent: true, opacity: 0.4, depthWrite: false })
+};
+function makePowerBox() {
+  const g = new THREE.Group(), cube = new THREE.Mesh(PB.geo, PB.mat); cube.position.y = 1.25; cube.add(new THREE.LineSegments(PB.eg, PB.lm));
+  const bm = new THREE.Mesh(PB.beam, PB.bm); bm.position.y = 3.5;
+  const rg = new THREE.Mesh(PB.ring, PB.rm); rg.rotation.x = -Math.PI / 2; rg.position.y = 0.05;
+  g.add(cube, bm, rg); g.userData = { cube }; return g;
+}
+const BOX_EVERY = 300, BOX_CLEAR = 16, SPEED_MUL = 1.5, SLOW_T = 2.2;
+const POWERS = [null,
+  { k: 'dark', ic: '🌑', nm: 'Escuridão', t: 4 }, { k: 'speed', ic: '💨', nm: 'Velocidade', t: 3 },
+  { k: 'extra', ic: '🚧', nm: 'Obstáculos extras', t: 6 }, { k: 'bolt', ic: '⚡', nm: 'Raio', t: SLOW_T },
+  { k: 'lock', ic: '🔒', nm: 'Bloqueio lateral', t: 4 }];
+const FXT = { dark: 4, lock: 4, slow: SLOW_T, extra: 6, speed: 3 };
+
+// type: low (pular) | tall (desviar) | bar (deslizar por baixo)
+function makeObstacle(type, len = 8, ci = 0) {
+  const g = new THREE.Group();
+  if (type === 'container') { // escalável: pule para subir e corra por cima
+    const b = new THREE.Mesh(G.box, contMats(ci, len)); b.scale.set(2, 1.5, len); b.position.y = 0.75; g.add(b);
+    g.userData = { w: 2, d: len, y0: 0, y1: 1.5, solid: true, step: 0.3, rm: len / 2 };
+  } else if (type === 'hurdle') { // barreira tripla: obstáculo baixo de pista inteira (pular)
+    g.add(box(OM.haz, 7.2, 0.8, 0.5, 0, 0.4, 0), box(OM.warn, 0.35, 0.25, 0.35, -3.3, 0.93, 0), box(OM.warn, 0.35, 0.25, 0.35, 3.3, 0.93, 0));
+    g.userData = { w: 7.2, d: 0.5, y0: 0, y1: 0.8 };
+  } else if (type === 'beam') { // barreira tripla: viga alta de pista inteira (deslizar)
+    g.add(box(OM.haz, 0.3, 2.2, 0.4, -3.5, 1.1, 0), box(OM.haz, 0.3, 2.2, 0.4, 3.5, 1.1, 0), box(OM.haz, 7.2, 0.5, 0.4, 0, 1.25, 0),
+      box(OM.warn, 0.3, 0.2, 0.3, -3.5, 2.3, 0), box(OM.warn, 0.3, 0.2, 0.3, 3.5, 2.3, 0));
+    g.userData = { w: 7.2, d: 0.4, y0: 1.0, y1: 1.5 };
+  } else if (type === 'low') {
+    g.add(box(OM.low, 2, 0.8, 0.7, 0, 0.4, 0), box(OM.stripe, 2.02, 0.2, 0.72, 0, 0.55, 0));
+    g.userData = { w: 2, d: 0.7, y0: 0, y1: 0.8 };
+  } else if (type === 'tall') {
+    g.add(box(OM.tall, 2, 2.4, 1.2, 0, 1.2, 0), box(OM.tallStripe, 2.02, 0.3, 1.22, 0, 1.6, 0));
+    g.userData = { w: 2, d: 1.2, y0: 0, y1: 2.4 };
+  } else {
+    g.add(box(OM.post, 0.2, 2.2, 0.3, -0.95, 1.1, 0), box(OM.post, 0.2, 2.2, 0.3, 0.95, 1.1, 0), box(OM.bar, 2, 0.5, 0.4, 0, 1.25, 0));
+    g.userData = { w: 2, d: 0.4, y0: 1.0, y1: 1.5 };
+  }
+  return g;
+}
+
+/* ================= LINHA DE CHEGADA ================= */
+function checkTexture(cols, rows) {
+  const c = document.createElement('canvas'); c.width = cols * 32; c.height = rows * 32;
+  const g = c.getContext('2d');
+  for (let r = 0; r < rows; r++) for (let q = 0; q < cols; q++) { g.fillStyle = (r + q) % 2 ? '#111' : '#fff'; g.fillRect(q * 32, r * 32, 32, 32); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.NearestFilter;
+  return t;
+}
+function bannerTexture() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 180;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1b1b3a'; g.fillRect(0, 0, 1024, 180);
+  for (let q = 0; q < 64; q++) { g.fillStyle = q % 2 ? '#fff' : '#111'; g.fillRect(q * 16, 0, 16, 16); g.fillRect(q * 16, 164, 16, 16); }
+  g.fillStyle = '#ffd23f'; g.font = '900 120px "Trebuchet MS", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('CHEGADA', 512, 94);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const FIN = {
+  stripGeo: new THREE.PlaneGeometry(7.6, 2.4),
+  bannerGeo: new THREE.PlaneGeometry(8.2, 1.44),
+  strip: new THREE.MeshBasicMaterial({ map: checkTexture(16, 5) }),
+  banner: new THREE.MeshBasicMaterial({ map: bannerTexture(), side: THREE.DoubleSide }),
+  post: new THREE.MeshLambertMaterial({ color: 0xf2f2f2 })
+};
+function makeFinishLine() {
+  const g = new THREE.Group();
+  const strip = new THREE.Mesh(FIN.stripGeo, FIN.strip); strip.rotation.x = -Math.PI / 2; strip.position.y = 0.03; g.add(strip);
+  for (const side of [-1, 1]) g.add(box(FIN.post, 0.3, 6.2, 0.3, side * 4.0, 3.1, 0));
+  g.add(box(FIN.post, 8.3, 0.2, 0.3, 0, 6.2, 0));
+  const banner = new THREE.Mesh(FIN.bannerGeo, FIN.banner); banner.position.set(0, 5.4, 0); g.add(banner);
+  return g;
+}
+
+/* ================= PERCURSO (igual para todos os jogadores) ================= */
+// Gera fileiras de obstáculos por distância absoluta, com semente: todos os jogadores enfrentam o mesmo percurso.
+class Course {
+  constructor(seed, total, multi = false) { this.seed = seed; this.r = mulberry32(seed); this.total = total; this.multi = multi; this.rows = []; this.d = 45; this.done = false; }
+  iv(d) { return Math.min(CFG.MAX_SPEED, CFG.BASE_SPEED + d * CFG.ACCEL) * Math.max(0.85, 1.7 - d * 0.0003); }
+  boxLane(k) { return (mulberry32((this.seed + k * 7919) >>> 0)() * 3) | 0; }
+  skipBox(s, len) { // mantém livre a pista ao redor das caixas de poder (a cada 300 m)
+    for (let k = Math.max(1, Math.floor((s - BOX_CLEAR) / BOX_EVERY)); k * BOX_EVERY - BOX_CLEAR < s + len; k++) {
+      const b = k * BOX_EVERY; if (this.total && b > this.total - 90) break;
+      if (s < b + BOX_CLEAR && s + len > b - BOX_CLEAR) s = b + BOX_CLEAR;
+    }
+    return s;
+  }
+  ok(d, span) { return !(this.total && d + span > this.total - 70) && this.skipBox(d, span) === d; }
+  genContainers(d) { // 1 ou 2 containers em pistas diferentes; sempre sobra uma pista totalmente livre
+    const r = this.r, L1 = [7, 9, 11][(r() * 3) | 0], lane = (r() * 3) | 0, two = r() < 0.4;
+    const obs = [{ lane, type: 'container', len: L1, ci: (r() * 4) | 0, off: L1 / 2 }]; let end = d + L1;
+    if (two) { const L2 = [7, 9][(r() * 2) | 0], sh = 4 + r() * 6; obs.push({ lane: (lane + 1 + ((r() * 2) | 0)) % 3, type: 'container', len: L2, ci: (r() * 4) | 0, off: sh + L2 / 2 }); end = Math.max(end, d + sh + L2); }
+    if (!this.ok(d, end - d)) return false;
+    this.rows.push({ d, obs, coinsLane: -1 }); this.d = end + this.iv(end) + 4; return true;
+  }
+  genTriple(d) { // 3 barreiras de pista inteira (pular/deslizar) com intervalo de ~1,25 s entre elas
+    const r = this.r, v = Math.min(CFG.MAX_SPEED, CFG.BASE_SPEED + d * CFG.ACCEL), S = v * 1.25 + 4, span = 2 * S;
+    if (!this.ok(d, span)) return false;
+    const pat = [['hurdle', 'beam', 'hurdle'], ['beam', 'hurdle', 'beam'], ['hurdle', 'hurdle', 'beam'], ['beam', 'beam', 'hurdle'], ['hurdle', 'beam', 'beam'], ['beam', 'hurdle', 'hurdle']][(r() * 6) | 0];
+    pat.forEach((type, i) => this.rows.push({ d: d + i * S, obs: [{ lane: 1, type, full: true }], coinsLane: -1 }));
+    this.d = d + span + this.iv(d + span); return true;
+  }
+  row(k) { while (this.rows.length <= k && !this.done) this.gen(); return this.rows[k] || null; }
+  gen() {
+    const r = this.r;
+    if (this.multi) this.d = this.skipBox(this.d, 0);
+    const d = this.d;
+    if (this.total && d > this.total - 60) { this.done = true; return; } // trecho final livre de obstáculos
+    if (this.multi && d > 130) { // novos obstáculos: somente nas corridas multiplayer
+      const e = r();
+      if (e < 0.13 && this.genContainers(d)) return;
+      if (e >= 0.13 && e < 0.24 && this.genTriple(d)) return;
+    }
+    const lanes = [0, 1, 2];
+    for (let i = 2; i > 0; i--) { const j = (r() * (i + 1)) | 0; [lanes[i], lanes[j]] = [lanes[j], lanes[i]]; }
+    const n = r() < Math.min(0.6, d / 2500) ? 2 : 1; // dificuldade: mais obstáculos por fileira
+    const obs = [];
+    for (let i = 0; i < n; i++) { const t = r(); obs.push({ lane: lanes[i], type: t < 0.4 ? 'low' : t < 0.75 ? 'tall' : 'bar' }); }
+    const coinsLane = r() < 0.75 ? lanes[n] : -1; // moedas numa pista livre
+    this.rows.push({ d, obs, coinsLane });
+    this.d += Math.min(CFG.MAX_SPEED, CFG.BASE_SPEED + d * CFG.ACCEL) * Math.max(0.85, 1.7 - d * 0.0003); // intervalo diminui com a dificuldade
+  }
+}
+
+/* ================= PERSONAGEM ================= */
+const loader = new GLTFLoader();
+
+// Controlador de animações: preparado para receber clipes (embutidos ou arquivos externos).
+// Se um estado não tiver clipe, nada é inventado: o personagem apenas se desloca como um todo.
+class AnimController {
+  constructor(root) { this.mixer = new THREE.AnimationMixer(root); this.actions = {}; this.current = null; }
+  has(state) { return !!this.actions[state]; }
+  add(state, clip) {
+    const a = this.mixer.clipAction(clip);
+    if (state === 'jumping' || state === 'sliding') { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+    this.actions[state] = a;
+  }
+  play(state) {
+    const next = this.actions[state];
+    if (!next || this.current === state) return;
+    const prev = this.actions[this.current];
+    next.reset().fadeIn(0.15).play();
+    if (prev) prev.fadeOut(0.15);
+    this.current = state;
+  }
+  update(dt) { this.mixer.update(dt); }
+}
+
+function buildPlaceholder() { // personagem provisório, usado só se o ash.glb falhar
+  const g = new THREE.Group();
+  const mk = c => new THREE.MeshLambertMaterial({ color: c });
+  g.add(box(mk(0x2b2d42), 0.55, 0.8, 0.35, 0, 0.4, 0));
+  g.add(box(mk(0x2ec4ff), 0.7, 0.7, 0.4, 0, 1.15, 0));
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 12), mk(0xf1c27d)); head.position.y = 1.65; g.add(head);
+  g.add(box(mk(0xff4d6d), 0.62, 0.16, 0.62, 0, 1.85, 0.05));
+  g.rotation.y = Math.PI; // aponta para -Z
+  const pivot = new THREE.Group(); pivot.add(g);
+  return pivot;
+}
+
+let charState = 'loading', charTemplate = null; // modelo carregado uma vez; cada jogador recebe um clone
+
+/* ================= MUNDO DE CADA JOGADOR ================= */
+// Cada jogador tem cena, câmera, personagem, obstáculos, moedas, distância e velocidade próprios.
+// No modo solo existe apenas 1 mundo, com o mesmo comportamento do jogo original.
+const race = { n: 1, total: 0, time: 0, endAt: null, course: null };
+let state = 'menu';
+const setState = s => { state = s; document.body.className = s + (race.n > 1 ? ' multi' : ' solo'); needRender = true; };
+let needRender = true;
+
+class World {
+  constructor(index) {
+    this.index = index;
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(SKY);
+    this.scene.fog = new THREE.Fog(SKY, 60, 170);
+    this.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 220);
+    this.camera.position.set(0, 4.4, 7.5);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x6aa84f, 1.1));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.7);
+    sun.position.set(6, 12, 6);
+    this.scene.add(sun);
+
+    this.lite = false; this.segs = []; this.buildSegments();
+    this.obstacles = []; this.coinList = [];
+
+    this.ash = new THREE.Group();      // posição (x, y) e inclinação
+    this.holder = new THREE.Group();   // transformações procedurais simples (agachar)
+    this.ash.add(this.holder); this.scene.add(this.ash);
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.6, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+    this.shadow.rotation.x = -Math.PI / 2; this.shadow.position.y = 0.03; this.scene.add(this.shadow);
+    this.anim = null; this.badge = null;
+    this.P = { lane: 1, x: 0, y: 0, vy: 0, gy: 0, slide: 0, slideQueued: false };
+    this.boxes = []; this.nextBox = 0; this.power = 0; this.cast = null; this.boost = 1; this.extraNext = 0; this.lockMsg = 0; this.shake = 0; this.bolt = null;
+    this.fx = { dark: 0, lock: 0, slow: 0, extra: 0, speed: 0 };
+    this.tAcc = 0; this.rect = { x: 0, y: 0, w: 1, h: 1 };
+    this.course = null; this.finish = null; this.finishSpawned = false;
+    this.nextRow = 0; this.dist = 0; this.coins = 0; this.speed = 0;
+    this.hitT = 0; this.invT = 0; this.finished = false; this.finishT = 0;
+    this.setCharacter();
+  }
+  buildSegments() {
+    for (const s of this.segs) this.scene.remove(s);
+    this.segs = [];
+    const n = this.lite ? 6 : NSEG;
+    for (let i = 0; i < n; i++) { const s = makeSegment(this.lite ? 3 : 6, this.lite ? 1 : 2); s.position.z = -i * L; this.scene.add(s); this.segs.push(s); }
+    this.camera.far = this.lite ? 180 : 220; this.camera.updateProjectionMatrix();
+  }
+  setQuality(lite) { // 3 ou 4 jogadores: cenário um pouco mais leve para manter o desempenho
+    if (lite === this.lite) return;
+    this.lite = lite; this.buildSegments();
+  }
+  setCharacter() {
+    this.holder.clear(); this.anim = null;
+    if (charState === 'ok') {
+      const model = SkeletonUtils.clone(charTemplate.model);
+      const pivot = new THREE.Group(); pivot.rotation.y = CFG.MODEL_YAW; pivot.add(model);
+      this.holder.add(pivot);
+      this.anim = new AnimController(model);
+      for (const [st, clip] of Object.entries(charTemplate.clips)) this.anim.add(st, clip);
+    } else if (charState === 'fail') this.holder.add(buildPlaceholder());
+  }
+  setSkin(tex) { // skin personalizada: medalhão com a foto sobre o personagem (não altera o modelo nem as animações)
+    if (this.badge) { this.ash.remove(this.badge); this.badge.material.dispose(); this.badge = null; }
+    if (tex) {
+      const b = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+      b.scale.set(0.95, 0.95, 1); b.position.set(0, 2.45, 0); this.ash.add(b); this.badge = b;
+    }
+    needRender = true;
+  }
+  reset(course) {
+    const scene = this.scene;
+    for (const o of this.obstacles) scene.remove(o);
+    for (const c of this.coinList) scene.remove(c);
+    if (this.finish) scene.remove(this.finish);
+    for (const b of this.boxes) scene.remove(b);
+    if (this.bolt) scene.remove(this.bolt.g);
+    this.boxes.length = 0; this.nextBox = 0; this.power = 0; this.cast = null; this.boost = 1; this.extraNext = 0; this.lockMsg = 0; this.shake = 0; this.bolt = null;
+    for (const k in this.fx) this.fx[k] = 0;
+    this.obstacles.length = 0; this.coinList.length = 0; this.finish = null; this.finishSpawned = false;
+    this.course = course; this.nextRow = 0;
+    this.dist = 0; this.coins = 0; this.speed = 0; this.hitT = 0; this.invT = 0; this.finished = false; this.finishT = 0;
+    Object.assign(this.P, { lane: 1, x: 0, y: 0, vy: 0, gy: 0, slide: 0, slideQueued: false });
+    this.holder.visible = true;
+    this.camera.position.set(0, 4.4, 7.5);
+    this.spawnRows();
+  }
+  spawnRows() {
+    const c = this.course; if (!c) return;
+    for (;;) {
+      const row = c.row(this.nextRow);
+      if (!row || row.d - this.dist > -CFG.SPAWN_Z) break;
+      this.spawnRow(row); this.nextRow++;
+    }
+    if (c.multi) for (;;) { // caixas de poder a cada 300 m percorridos
+      const k = this.nextBox + 1, b = k * BOX_EVERY;
+      if ((c.total && b > c.total - 90) || b - this.dist > -CFG.SPAWN_Z) break;
+      const bx = makePowerBox(); bx.position.set(CFG.LANE_X[c.boxLane(k)], 0, -(b - this.dist));
+      this.scene.add(bx); this.boxes.push(bx); this.nextBox++;
+    }
+  }
+  spawnRow(row) {
+    const z = -(row.d - this.dist);
+    for (const ob of row.obs) {
+      const o = makeObstacle(ob.type, ob.len, ob.ci);
+      o.position.set(ob.full ? 0 : CFG.LANE_X[ob.lane], 0, z - (ob.off || 0));
+      this.scene.add(o); this.obstacles.push(o);
+      if (ob.len) for (let k = -2; k <= 2; k++) { // moedas em cima do container
+        const c = new THREE.Mesh(coinGeo, OM.coin); c.position.set(o.position.x, 2.5, o.position.z + k * 1.6);
+        this.scene.add(c); this.coinList.push(c);
+      }
+    }
+    if (row.coinsLane >= 0) {
+      for (let k = -2; k <= 2; k++) {
+        const c = new THREE.Mesh(coinGeo, OM.coin);
+        c.position.set(CFG.LANE_X[row.coinsLane], 1, z + k * 2.2);
+        this.scene.add(c); this.coinList.push(c);
+      }
+    }
+  }
+  // controles
+  moveLane(d) {
+    if (state !== 'playing') return;
+    if (this.fx.lock > 0) { if (this.lockMsg <= 0) { this.lockMsg = 0.8; toast(this.index, '🔒 Faixa bloqueada!'); } return; }
+    this.P.lane = clamp(this.P.lane + d, 0, 2);
+  }
+  jump() {
+    const P = this.P;
+    if (state !== 'playing' || P.y > P.gy + 0.001) return;
+    P.slide = 0; P.vy = CFG.JUMP_V; P.y = P.gy + 0.001; snd('jump');
+  }
+  slide() {
+    const P = this.P;
+    if (state !== 'playing') return;
+    if (P.y > P.gy + 0.001) { P.vy = -22; P.slideQueued = true; } // cai rápido e desliza ao pousar
+    else P.slide = CFG.SLIDE_TIME;
+  }
+  hitMul() { // multiplayer: velocidade volta aos poucos depois de uma batida
+    if (this.hitT <= 0) return 1;
+    const k = 1 - this.hitT / CFG.HIT_TIME;
+    return CFG.HIT_MIN + (1 - CFG.HIT_MIN) * k * k;
+  }
+  slowMul() { // raio: penalidade temporária de velocidade
+    if (this.fx.slow <= 0) return 1;
+    const k = 1 - this.fx.slow / SLOW_T; return 0.35 + 0.65 * k * k;
+  }
+  floorAt() { // altura do chão sob o jogador (0 ou topo de um container)
+    const P = this.P; let g = 0; if (P.vy > 0) return g;
+    for (const o of this.obstacles) {
+      const u = o.userData;
+      if (u.solid && Math.abs(o.position.z) < u.d / 2 + 0.1 && Math.abs(o.position.x - P.x) < u.w / 2 && P.y >= u.y1 - u.step && u.y1 > g) g = u.y1;
+    }
+    return g;
+  }
+  spawnExtra() { // poder 3: acrescenta um 2º obstáculo (pular/deslizar) a uma fileira de 1 obstáculo ainda distante → sempre sobra 1 pista livre
+    const cand = [];
+    for (const o of this.obstacles) {
+      const u = o.userData, z = o.position.z;
+      if (u.solid || u.w > 2 || u.grow !== undefined || z > -80 || z < -135) continue;
+      if (this.obstacles.some(q => q !== o && Math.abs(q.position.z - z) < 1.5)) continue;
+      cand.push(o);
+    }
+    if (!cand.length) return false;
+    const base = cand[(Math.random() * cand.length) | 0], lanes = [0, 1, 2].filter(l => Math.abs(CFG.LANE_X[l] - base.position.x) > 0.5);
+    const o = makeObstacle(Math.random() < 0.55 ? 'low' : 'bar');
+    o.position.set(CFG.LANE_X[lanes[(Math.random() * 2) | 0]], 0, base.position.z); o.userData.grow = 0; o.scale.y = 0.05;
+    this.scene.add(o); this.obstacles.push(o); return true;
+  }
+  strike() { // raio caindo sobre o jogador
+    if (this.bolt) this.scene.remove(this.bolt.g);
+    const g = new THREE.Group(), X = this.P.x; let px = X, py = 9;
+    for (let i = 1; i <= 7; i++) {
+      const nx = i === 7 ? X : X + rand(-0.7, 0.7), ny = 9 - i * 9 / 7, dx = nx - px, dy = ny - py, len = Math.hypot(dx, dy);
+      const a = box(PB.bolt, 0.16, len + 0.1, 0.16, (px + nx) / 2, (py + ny) / 2, 0), b = box(PB.glow, 0.5, len + 0.1, 0.5, (px + nx) / 2, (py + ny) / 2, 0);
+      a.rotation.z = b.rotation.z = -Math.atan2(dx, dy); g.add(a, b); px = nx; py = ny;
+    }
+    const ring = new THREE.Mesh(PB.ring, PB.rm); ring.rotation.x = -Math.PI / 2; ring.position.set(X, 0.06, 0); g.add(ring);
+    this.scene.add(g); this.bolt = { g, ring, t: 0.7 }; this.shake = 0.5;
+  }
+  tickFx(dt) {
+    const f = this.fx;
+    for (const k in f) if (f[k] > 0) f[k] = Math.max(0, f[k] - dt);
+    if (this.cast) { this.cast.t -= dt; if (this.cast.t <= 0) this.cast = null; }
+    if (this.lockMsg > 0) this.lockMsg -= dt;
+    if (this.shake > 0) this.shake -= dt;
+    if (f.extra > 0 && (this.extraNext -= dt) <= 0) this.extraNext = this.spawnExtra() ? rand(0.8, 1.3) : 0.3;
+    const b = this.bolt;
+    if (b) { b.t -= dt; b.g.visible = b.t > 0.45 || Math.floor(b.t * 18) % 2 === 0; b.ring.scale.setScalar(1 + (0.7 - b.t) * 3); if (b.t <= 0) { this.scene.remove(b.g); this.bolt = null; } }
+  }
+  // mode: 'play' (correndo) | 'idle' (cenário rolando no menu) | 'still' (parado)
+  update(dt, mode) {
+    const playing = mode === 'play', P = this.P, scene = this.scene;
+    this.tAcc += dt;
+    let speed = 0;
+    if (playing) {
+      this.boost += ((this.fx.speed > 0 ? SPEED_MUL : 1) - this.boost) * Math.min(1, dt * 6);
+      speed = Math.min(CFG.MAX_SPEED, CFG.BASE_SPEED + this.dist * CFG.ACCEL) * this.hitMul() * this.slowMul() * this.boost;
+    }
+    else if (mode === 'idle') speed = 6;
+    this.speed = speed;
+    const dz = speed * dt;
+
+    // cenário
+    for (const s of this.segs) {
+      s.position.z += dz;
+      if (s.position.z > L) { s.position.z -= this.segs.length * L; s.userData.decor.forEach(scatter); }
+    }
+    // objetos
+    for (let i = this.obstacles.length - 1; i >= 0; i--) {
+      const o = this.obstacles[i]; o.position.z += dz;
+      const u = o.userData; if (u.grow < 1) { u.grow = Math.min(1, u.grow + dt * 3); o.scale.y = 0.05 + 0.95 * u.grow; }
+      if (o.position.z > 10 + (u.rm || 0)) { scene.remove(o); this.obstacles.splice(i, 1); }
+    }
+    for (let i = this.boxes.length - 1; i >= 0; i--) {
+      const b = this.boxes[i]; b.position.z += dz; b.userData.cube.rotation.y += dt * 2.2; b.userData.cube.position.y = 1.25 + Math.sin(this.tAcc * 3) * 0.12;
+      if (b.position.z > 10) { scene.remove(b); this.boxes.splice(i, 1); }
+    }
+    for (let i = this.coinList.length - 1; i >= 0; i--) {
+      const c = this.coinList[i]; c.position.z += dz; c.rotation.y += dt * 4;
+      if (c.position.z > 10) { scene.remove(c); this.coinList.splice(i, 1); }
+    }
+    if (this.finish) {
+      this.finish.position.z += dz;
+      if (this.finish.position.z > 12) { scene.remove(this.finish); this.finish = null; }
+    }
+
+    // jogador: pista, pulo, deslize
+    const tx = CFG.LANE_X[P.lane];
+    P.x += (tx - P.x) * Math.min(1, dt * 14);
+    if (P.slide > 0) P.slide -= dt;
+    const gy = this.floorAt(); P.gy = gy;
+    if (P.y > gy || P.vy > 0 || P.y < gy) {
+      if (P.y >= gy) { P.vy -= CFG.GRAVITY * dt; P.y += P.vy * dt; }
+      if (P.y <= gy) { P.y = gy; P.vy = 0; if (P.slideQueued) { P.slide = CFG.SLIDE_TIME; P.slideQueued = false; } }
+    }
+    const sliding = P.slide > 0, grounded = P.y <= gy + 0.001;
+
+    if (playing) {
+      if (this.hitT > 0) this.hitT = Math.max(0, this.hitT - dt);
+      if (this.invT > 0) this.invT = Math.max(0, this.invT - dt);
+      const prev = this.dist;
+      this.dist += dz;
+      this.spawnRows();
+
+      // linha de chegada e cruzamento
+      if (race.total) {
+        if (!this.finishSpawned && race.total - this.dist <= 150) {
+          this.finish = makeFinishLine(); this.finish.position.z = -(race.total - this.dist);
+          scene.add(this.finish); this.finishSpawned = true;
+        }
+        if (!this.finished && this.dist >= race.total) {
+          this.finished = true; // instante exato do cruzamento (interpolado dentro do frame)
+          this.finishT = (race.time - dt) + dt * (race.total - prev) / dz;
+          onFinish();
+        }
+      }
+
+      // colisões (AABB)
+      const pMin = P.y, pMax = P.y + (sliding ? CFG.SLIDE_H : CFG.STAND_H);
+      if (!this.finished && this.invT <= 0) {
+        for (const o of this.obstacles) {
+          const u = o.userData;
+          if (u.hit) continue;
+          const hz = u.d / 2 + 0.35, z = o.position.z;
+          if ((Math.abs(z) < hz || (race.n > 1 && z - dz < -hz && z > hz)) && Math.abs(o.position.x - P.x) < u.w / 2 + 0.4 && pMax > u.y0 + 0.05 && pMin < u.y1 - (u.step || 0.05)) {
+            snd('hit');
+            if (race.n === 1) { gameOver(); break; }          // solo: bateu, acabou
+            u.hit = true; this.hitT = CFG.HIT_TIME; this.invT = CFG.INV_TIME; break; // multiplayer: perde velocidade
+          }
+        }
+      }
+      // moedas
+      for (let i = this.coinList.length - 1; i >= 0; i--) {
+        const c = this.coinList[i];
+        if (Math.abs(c.position.z) < 0.8 && Math.abs(c.position.x - P.x) < 0.8 && c.position.y > pMin - 0.3 && c.position.y < pMax + 0.3) {
+          scene.remove(c); this.coinList.splice(i, 1); this.coins++;
+          if (race.n === 1) { const pill = $('coinPill'); pill.classList.add('pop'); setTimeout(() => pill.classList.remove('pop'), 120); }
+        }
+      }
+      for (let i = this.boxes.length - 1; i >= 0 && !this.power; i--) { // caixa de poder: só pega se estiver sem poder
+        const b = this.boxes[i];
+        if (Math.abs(b.position.z) < 1 && Math.abs(b.position.x - P.x) < 1.1 && pMin < 1.7 && pMax > 0.7) {
+          scene.remove(b); this.boxes.splice(i, 1); this.power = 1 + ((Math.random() * 5) | 0);
+          snd('pickup'); popSlot(this.index); toast(this.index, POWERS[this.power].ic + ' ' + POWERS[this.power].nm + '!');
+        }
+      }
+      this.tickFx(dt);
+    }
+
+    // visual do personagem
+    this.ash.position.set(P.x, P.y, 0);
+    this.ash.rotation.z = -(tx - P.x) * 0.08;
+    const want = playing ? (!grounded ? 'jumping' : sliding ? 'sliding' : 'running') : 'idle';
+    if (this.anim) { this.anim.play(want); this.anim.update(dt); }
+    // Sem clipe correspondente: só transformações simples do corpo inteiro (sem articulações)
+    const hasSlide = this.anim && this.anim.has('sliding');
+    const hasRun = this.anim && this.anim.has('running');
+    this.holder.scale.y += ((sliding && !hasSlide ? 0.55 : 1) - this.holder.scale.y) * Math.min(1, dt * 18);
+    this.holder.position.y = (playing && grounded && !sliding && !hasRun) ? Math.abs(Math.sin(this.tAcc * 12)) * 0.07 : 0;
+    this.holder.visible = !(this.invT > 0 && Math.floor(this.tAcc * 16) % 2 === 0); // pisca depois de bater (multiplayer)
+    this.shadow.position.x = P.x; this.shadow.position.y = 0.03 + gy;
+    this.shadow.scale.setScalar(Math.max(0.4, 1 - (P.y - gy) * 0.25));
+
+    // câmera
+    const cam = this.camera;
+    cam.position.x += (P.x * 0.6 - cam.position.x) * Math.min(1, dt * 5);
+    cam.position.y += (4.4 + P.gy * 0.7 - cam.position.y) * Math.min(1, dt * 4);
+    cam.lookAt(cam.position.x * 0.5 + (this.shake > 0 ? rand(-0.3, 0.3) : 0), 1.3 + P.gy * 0.5, -10);
+  }
+}
+
+const worlds = [];
+let active = [];
+const getWorld = i => { while (worlds.length <= i) worlds.push(new World(worlds.length)); return worlds[i]; };
+let layout = null;
+
+async function loadAsh() {
+  const status = $('status');
+  try {
+    const gltf = await loader.loadAsync(CFG.MODEL_URL);
+    const model = gltf.scene;
+    model.traverse(o => { if (o.isMesh || o.isSkinnedMesh) { o.frustumCulled = false; } });
+    model.updateMatrixWorld(true);
+    let b = new THREE.Box3().setFromObject(model);
+    const size = b.getSize(new THREE.Vector3());
+    if (!isFinite(size.y) || size.y <= 0) throw new Error('modelo sem geometria visível');
+    model.scale.multiplyScalar(CFG.MODEL_HEIGHT / size.y);
+    model.updateMatrixWorld(true);
+    b = new THREE.Box3().setFromObject(model);
+    const c = b.getCenter(new THREE.Vector3());
+    model.position.x -= c.x; model.position.z -= c.z; model.position.y -= b.min.y; // pés em y=0, centrado
+    const clips = {};
+    for (const clip of gltf.animations)
+      for (const [st, re] of Object.entries(CLIP_PATTERNS))
+        if (re.test(clip.name) && !clips[st]) clips[st] = clip;
+    await Promise.all(Object.entries(CFG.ANIMATION_FILES).filter(([, u]) => u).map(async ([st, u]) => {
+      try {
+        const g = await loader.loadAsync(u);
+        if (!g.animations.length) throw new Error('sem clipes em ' + u);
+        clips[st] = g.animations[0];
+      } catch (e) { console.warn('Animação "' + st + '" não carregada:', e); }
+    }));
+    charTemplate = { model, clips }; charState = 'ok';
+    const found = Object.keys(clips);
+    status.textContent = found.length ? 'Ash carregado! Animações: ' + found.join(', ') : 'Ash carregado! (sem animações ainda — o modelo desliza pela pista)';
+  } catch (err) {
+    console.error('Erro ao carregar ' + CFG.MODEL_URL, err);
+    charState = 'fail';
+    status.textContent = '⚠️ Não foi possível carregar "ash.glb" (coloque-o na mesma pasta do index.html e abra via Live Server). Usando personagem provisório.';
+    status.className = 'warn';
+  }
+  worlds.forEach(w => w.setCharacter());
+}
+
+/* ================= LAYOUT DAS TELAS (viewports) ================= */
+function computeRects(n, W, H) {
+  if (n === 1) return { views: [{ x: 0, y: 0, w: W, h: H }], panel: null };
+  const g = 4, hw = Math.floor((W - g) / 2), hh = Math.floor((H - g) / 2);
+  const R = (x, y, w, h) => ({ x, y, w, h });
+  if (n === 2) return { views: [R(0, 0, hw, H), R(hw + g, 0, hw, H)], panel: null };
+  if (n === 3) return { views: [R(0, 0, hw, hh), R(0, hh + g, hw, hh), R(hw + g, hh + g, hw, hh)], panel: R(hw + g, 0, hw, hh) };
+  return { views: [R(0, 0, hw, hh), R(hw + g, 0, hw, hh), R(0, hh + g, hw, hh), R(hw + g, hh + g, hw, hh)], panel: null };
+}
+
+/* ================= HUD MULTIPLAYER ================= */
+const huds = [];
+for (let i = 0; i < 4; i++) {
+  const el = document.createElement('div');
+  el.className = 'phud hidden'; el.style.setProperty('--pc', PCOLOR[i]);
+  el.innerHTML = '<div class="card"><div class="ph-top"><span class="ph-tag">J' + (i + 1) + '</span><span class="ph-rk"></span><span class="ph-d">0 m</span><span class="ph-p">0%</span></div>' +
+    '<div class="ph-bar"><i></i></div><div class="ph-sub"><span class="ph-c">🪙 0</span><span class="ph-s">0 pts</span></div></div>' +
+    '<div class="pw"><div class="pw-slot empty"><span class="pw-ic">📦</span><span class="pw-nm">Sem poder</span><span class="pw-key hidden"></span></div><div class="pw-fx"></div></div>';
+  $('pHuds').appendChild(el);
+  huds.push({ el, tag: el.querySelector('.ph-tag'), rk: el.querySelector('.ph-rk'), d: el.querySelector('.ph-d'), p: el.querySelector('.ph-p'),
+    bar: el.querySelector('.ph-bar i'), c: el.querySelector('.ph-c'), s: el.querySelector('.ph-s'), cache: {} });
+  const pw = { slot: el.querySelector('.pw-slot'), ic: el.querySelector('.pw-ic'), nm: el.querySelector('.pw-nm'), key: el.querySelector('.pw-key'), chips: {}, last: -1 };
+  for (const [k, ic, cls] of [['cast', '', ''], ['speed', '💨', 'good'], ['dark', '🌑', 'bad'], ['lock', '🔒', 'bad'], ['slow', '⚡', 'bad'], ['extra', '🚧', 'bad']]) {
+    const c = document.createElement('span'); c.className = 'fxc hidden ' + cls; c.innerHTML = '<span>' + ic + '</span><i><b></b></i>';
+    el.querySelector('.pw-fx').appendChild(c); pw.chips[k] = { el: c, ic: c.firstChild, bar: c.querySelector('b'), on: false, pct: -1 };
+  }
+  huds[i].pw = pw;
+}
+const fxv = []; // camadas visuais por jogador: escuridão, clarão do raio e aviso de poder
+for (let i = 0; i < 4; i++) {
+  const el = document.createElement('div'); el.className = 'fxv hidden'; el.style.setProperty('--pc', PCOLOR[i]);
+  el.innerHTML = '<div class="fx-dark"></div><div class="fx-flash"></div><div class="fx-toast"></div>';
+  $('fxLayer').appendChild(el); fxv.push({ el, dark: el.children[0], flash: el.children[1], toast: el.children[2], on: false });
+}
+const retrig = el => { el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); };
+function toast(i, t) { const f = fxv[i]; if (f) { f.toast.textContent = t; retrig(f.toast); } }
+function flash(i) { const f = fxv[i]; if (f) retrig(f.flash); }
+function popSlot(i) { const s = huds[i] && huds[i].pw.slot; if (s) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); } }
+function refreshPowerKeys() { huds.forEach((h, i) => { h.pw.key.textContent = keyName(cfg.keys[i].power); }); }
+function updatePowerHud() {
+  for (let i = 0; i < race.n; i++) {
+    const w = active[i], h = huds[i].pw, f = fxv[i], pd = w.power ? POWERS[w.power] : null;
+    if (h.last !== w.power) {
+      h.last = w.power; h.slot.classList.toggle('empty', !pd); h.slot.classList.toggle('ready', !!pd);
+      h.ic.textContent = pd ? pd.ic : '📦'; h.nm.textContent = pd ? pd.nm : 'Sem poder'; h.key.classList.toggle('hidden', !pd);
+    }
+    for (const k in h.chips) {
+      const c = h.chips[k]; let t = 0, tot = 1, ic = null;
+      if (k === 'cast') { if (w.cast) { t = w.cast.t; tot = w.cast.d; ic = POWERS.find(x => x && x.k === w.cast.k).ic; } }
+      else { t = w.fx[k]; tot = FXT[k]; }
+      const on = t > 0; if (c.on !== on) { c.on = on; c.el.classList.toggle('hidden', !on); }
+      if (on) { if (ic) c.ic.textContent = ic; const pct = Math.round(t / tot * 50) * 2; if (c.pct !== pct) { c.pct = pct; c.bar.style.width = pct + '%'; } }
+    }
+    const d = w.fx.dark > 0; if (f.on !== d) { f.on = d; f.dark.classList.toggle('on', d); }
+  }
+}
+let pRows = [], cRows = []; // linhas do painel do trio e do painel central do quarteto
+function buildPanelRows() {
+  $('ptRows').textContent = ''; $('pcRows').textContent = ''; pRows = []; cRows = [];
+  const n = race.n;
+  if (n === 3) for (let i = 0; i < 3; i++) {
+    const row = document.createElement('div'); row.className = 'prow'; row.style.setProperty('--pc', PCOLOR[i]);
+    row.innerHTML = '<div class="pr-top"><span class="ph-tag">Jogador ' + (i + 1) + '</span><span class="pr-t"></span></div><div class="ph-bar"><i></i></div>';
+    $('ptRows').appendChild(row); pRows.push({ t: row.querySelector('.pr-t'), bar: row.querySelector('.ph-bar i') });
+    row.style.marginBottom = '10px';
+  }
+  if (n === 4) for (let i = 0; i < 4; i++) {
+    const row = document.createElement('div'); row.className = 'crow'; row.style.setProperty('--pc', PCOLOR[i]);
+    row.innerHTML = '<b>J' + (i + 1) + '</b><div class="ph-bar"><i></i></div><span>0%</span>';
+    $('pcRows').appendChild(row); cRows.push({ p: row.querySelector('span'), bar: row.querySelector('.ph-bar i') });
+  }
+  $('ptInfo').textContent = fmt(race.total) + ' m'; $('pcDist').textContent = '🏁 ' + fmt(race.total) + ' m';
+  for (const h of huds) h.cache = {};
+}
+function positionHuds() {
+  const multi = race.n > 1;
+  huds.forEach((h, i) => {
+    const on = multi && i < race.n; h.el.classList.toggle('hidden', !on);
+    if (on) {
+      const r = layout.views[i];
+      Object.assign(h.el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px' });
+      h.tag.textContent = (r.w >= 330 ? 'Jogador ' : 'J') + (i + 1);
+    }
+  });
+  fxv.forEach((f, i) => {
+    const on = multi && i < race.n; f.el.classList.toggle('hidden', !on);
+    if (on) { const r = layout.views[i]; Object.assign(f.el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' }); }
+  });
+  $('panelTrio').classList.toggle('hidden', race.n !== 3);
+  if (race.n === 3 && layout.panel) { const r = layout.panel; Object.assign($('panelTrio').style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' }); }
+  $('panelCenter').classList.toggle('hidden', race.n !== 4);
+}
+function rankOrder() { // melhor → pior: quem já cruzou (por tempo), depois por distância
+  return active.map((w, i) => i).sort((a, b) => {
+    const A = active[a], B = active[b];
+    if (A.finished !== B.finished) return A.finished ? -1 : 1;
+    if (A.finished) return A.finishT - B.finishT;
+    return B.dist - A.dist;
+  });
+}
+
+/* ================= ESTADO DO JOGO ================= */
+let best = store.get();
+const sel = { players: 1, dist: 'inf' };
+let soloDist = 'inf';
+const score = w => Math.floor(w.dist) + w.coins * 10;
+$('mBest').textContent = best;
+
+const SCREENS = ['menu', 'over', 'results', 'pause', 'settings', 'custom', 'audio'];
+function showScreen(id) { for (const s of SCREENS) $(s).classList.toggle('hidden', s !== id); }
+
+function resize() {
+  const W = window.innerWidth, H = window.innerHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, race.n >= 3 ? 1.5 : 2));
+  renderer.setSize(W, H, false);
+  layout = computeRects(race.n, W, H);
+  active.forEach((w, i) => {
+    const r = layout.views[i]; w.rect = r;
+    w.camera.aspect = r.w / r.h;
+    w.camera.fov = r.w / r.h < 0.8 ? 78 : 60; // mais campo de visão em telas verticais
+    w.camera.updateProjectionMatrix();
+  });
+  positionHuds();
+  applyTouchPositions();
+  needRender = true;
+}
+window.addEventListener('resize', resize);
+
+function setActive(n) {
+  race.n = n; active = [];
+  for (let i = 0; i < n; i++) active.push(getWorld(i));
+  active.forEach(w => w.setQuality(n >= 3));
+  resize();
+}
+
+function startGame() {
+  if ($('play').disabled) return;
+  const n = sel.players, total = sel.dist === 'inf' ? 0 : CFG.RACES[sel.dist];
+  setActive(n);
+  race.total = total; race.time = 0; race.endAt = null; race.vic = false;
+  race.course = new Course((Math.random() * 4294967296) >>> 0, total, n > 1);
+  active.forEach(w => w.reset(race.course));
+  buildPanelRows();
+  hc.d = hc.c = hc.s = -1;
+  $('sbar').classList.toggle('hidden', !(total && n === 1)); $('sbar').firstChild.style.width = '0%';
+  audioInit(); A.started = true; duck(false); playMusic(); applySkins();
+  showScreen(null);
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  setState('playing');
+  clock.getDelta();
+  updateHud();
+  if (n > 1) { huds.forEach(h => { h.pw.last = -1; }); refreshPowerKeys(); updatePowerHud(); }
+}
+function goMenu() {
+  duck(false);
+  setActive(1);
+  race.total = 0; race.course = null; race.endAt = null;
+  worlds[0].reset(null);
+  showScreen('menu'); setState('menu'); refreshMenu();
+}
+function pause() { if (state !== 'playing') return; setState('paused'); showScreen('pause'); }
+function resume() { if (state !== 'paused') return; showScreen(null); setState('playing'); clock.getDelta(); }
+
+// Fim de partida no modo solo: bater (Game Over) ou cruzar a linha de chegada
+function gameOver(finished = false) {
+  setState('over');
+  if (navigator.vibrate) navigator.vibrate(finished ? [60, 40, 60] : 180);
+  const w = active[0], sc = score(w), record = sc > best;
+  if (record) { best = sc; store.set(best); }
+  $('oTitle').textContent = finished ? '🏁 Chegada!' : 'Game Over';
+  $('oTitle').classList.toggle('win', finished);
+  $('oScore').textContent = sc; $('oDist').textContent = (finished ? race.total : Math.floor(w.dist)) + ' m'; $('oCoins').textContent = w.coins;
+  $('oBest').textContent = best; $('mBest').textContent = best;
+  $('record').classList.toggle('hidden', !record);
+  setTimeout(() => { if (state === 'over') showScreen('over'); }, 650);
+}
+
+function showResults() {
+  updateHud();
+  setState('results');
+  const total = race.total, order = rankOrder(), pos = [];
+  order.forEach((i, k) => {
+    if (k === 0) { pos[i] = 1; return; }
+    const prev = order[k - 1], A = active[prev], B = active[i];
+    pos[i] = (A.finished && B.finished && Math.abs(B.finishT - A.finishT) < CFG.TIE_EPS) ? pos[prev] : k + 1;
+  });
+  const winners = order.filter(i => pos[i] === 1);
+  const names = winners.map(i => 'Jogador ' + (i + 1));
+  const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' e ' + names[names.length - 1] : names[0];
+  $('rTitle').textContent = winners.length === 1 ? '🏆 ' + list + ' venceu!' : '🤝 Empate!';
+  $('rSub').textContent = winners.length === 1 ? 'Cruzou a linha de chegada primeiro!' : 'Empate entre ' + list + '.';
+  const box = $('rList'); box.textContent = '';
+  for (const i of order) {
+    const w = active[i], row = document.createElement('div');
+    row.className = 'rrow' + (pos[i] === 1 ? ' first' : ''); row.style.setProperty('--pc', PCOLOR[i]);
+    const medal = pos[i] === 1 ? '🥇' : pos[i] === 2 ? '🥈' : pos[i] === 3 ? '🥉' : pos[i] + 'º';
+    const d = w.finished ? total : Math.min(total, Math.floor(w.dist));
+    const pct = Math.min(100, Math.floor(d / total * 100));
+    const t = w.finished ? '🏁 ' + w.finishT.toFixed(2).replace('.', ',') + ' s' : 'não chegou';
+    row.innerHTML = '<span class="rm">' + medal + '</span><span class="rn">Jogador ' + (i + 1) + '</span><span class="rd">' + fmt(d) + ' m · ' + pct + '%</span>' +
+      '<span class="rx">' + t + ' · 🪙 ' + w.coins + ' · ' + fmt(score(w)) + ' pts</span>';
+    box.appendChild(row);
+  }
+  showScreen('results');
+}
+
+function checkRaceEnd() {
+  if (!race.total) return;
+  if (race.endAt === null && active.some(w => w.finished)) race.endAt = race.time + (race.n > 1 ? CFG.GRACE : 0);
+  if (race.endAt !== null && race.time >= race.endAt) {
+    if (race.n === 1) gameOver(true); else showResults();
+  }
+}
+
+/* ================= CONTROLES ================= */
+function act(p, a) {
+  const w = active[p]; if (!w) return;
+  if (a === 'power') { usePower(p); return; }
+  if (a === 'left') w.moveLane(-1); else if (a === 'right') w.moveLane(1); else if (a === 'jump') w.jump(); else w.slide();
+}
+function usePower(p) { // ativa o poder guardado: atinge só os adversários ativos, nunca o próprio jogador
+  const w = active[p];
+  if (state !== 'playing' || race.n < 2 || !w || !w.power || w.finished) return;
+  const pw = POWERS[w.power]; w.power = 0; popSlot(p);
+  if (pw.k !== 'speed') w.cast = { k: pw.k, t: pw.t, d: pw.t };
+  toast(p, pw.ic + ' ' + pw.nm + '!'); snd(pw.k);
+  if (pw.k === 'speed') w.fx.speed = pw.t;
+  for (const o of active) {
+    if (o === w || o.finished) continue;
+    if (pw.k === 'dark') o.fx.dark = pw.t; else if (pw.k === 'lock') o.fx.lock = pw.t;
+    else if (pw.k === 'extra') { o.fx.extra = pw.t; o.extraNext = 0.5; }
+    else if (pw.k === 'bolt') { o.fx.slow = pw.t; o.strike(); flash(o.index); }
+    toast(o.index, pw.ic + ' J' + (p + 1) + ': ' + pw.nm + '!');
+  }
+}
+function lookup(code) { // tecla → { jogador, ação }
+  const hit = keymap.get(code);
+  if (race.n === 1) { // solo: teclas do Jogador 1 e do Jogador 2 (setas) + Espaço, como no jogo original
+    if (hit && hit.p <= 1 && hit.a !== 'power') return { p: 0, a: hit.a };
+    if (code === 'Space') return { p: 0, a: 'jump' };
+    return null;
+  }
+  return hit && hit.p < race.n ? hit : null;
+}
+let capturing = null;
+const NAV = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
+window.addEventListener('keydown', e => {
+  if (capturing) return;
+  const k = e.code, onBtn = e.target instanceof HTMLButtonElement;
+  if (state === 'playing') {
+    const hit = lookup(k);
+    if (hit || NAV.includes(k)) e.preventDefault();
+    if (e.repeat) return;
+    if (hit) act(hit.p, hit.a);
+    else if (k === 'Escape' || k === 'KeyP') pause();
+    return;
+  }
+  if (state === 'paused') { if (k === 'Escape' || k === 'KeyP') { e.preventDefault(); resume(); } return; }
+  if (state === 'settings') { if (k === 'Escape') closeSettings(); return; }
+  if (state === 'editTouch') { if (k === 'Escape') endEditTouch(); return; }
+  if (!onBtn && NAV.includes(k)) e.preventDefault();
+  if (e.repeat) return;
+  if (!onBtn && (k === 'Enter' || k === 'Space')) {
+    if (state === 'menu') startGame();
+    else if (state === 'over' && !$('over').classList.contains('hidden')) startGame();
+    else if (state === 'results' && !$('results').classList.contains('hidden')) startGame();
+  }
+});
+// Swipe (controla o Jogador 1)
+let t0 = null;
+window.addEventListener('touchstart', e => { const t = e.changedTouches[0]; t0 = { x: t.clientX, y: t.clientY }; }, { passive: true });
+window.addEventListener('touchend', e => {
+  if (!t0) return;
+  const t = e.changedTouches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y; t0 = null;
+  if (state !== 'playing' || Math.max(Math.abs(dx), Math.abs(dy)) < 30) return;
+  if (Math.abs(dx) > Math.abs(dy)) act(0, dx > 0 ? 'right' : 'left'); else act(0, dy < 0 ? 'jump' : 'slide');
+}, { passive: true });
+
+/* ---- Botões virtuais (controlam o Jogador 1), com posição personalizável ---- */
+function applyTouchPositions() {
+  const W = window.innerWidth, H = window.innerHeight;
+  for (const id of TOUCH_IDS) {
+    const b = $(id), t = cfg.touch[id];
+    if (t) {
+      b.style.position = 'fixed';
+      b.style.left = clamp(t.x * W - TB / 2, 0, Math.max(0, W - TB)) + 'px';
+      b.style.top = clamp(t.y * H - TB / 2, 0, Math.max(0, H - TB)) + 'px';
+    } else { b.style.position = ''; b.style.left = ''; b.style.top = ''; }
+  }
+}
+function freezeTouch() { // passa todos os botões para posição absoluta (evita que os outros "pulem" ao arrastar um)
+  const W = window.innerWidth, H = window.innerHeight;
+  for (const id of TOUCH_IDS) if (!cfg.touch[id]) {
+    const r = $(id).getBoundingClientRect();
+    cfg.touch[id] = { x: clamp((r.left + r.width / 2) / W, 0, 1), y: clamp((r.top + r.height / 2) / H, 0, 1) };
+  }
+  applyTouchPositions();
+}
+let drag = null;
+function moveDrag(e) {
+  const W = window.innerWidth, H = window.innerHeight;
+  cfg.touch[drag.id] = { x: clamp(e.clientX / W, TB / 2 / W, 1 - TB / 2 / W), y: clamp(e.clientY / H, TB / 2 / H, 1 - TB / 2 / H) };
+  applyTouchPositions();
+}
+const bind = (id, a) => {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (state === 'editTouch') { freezeTouch(); drag = { id }; try { b.setPointerCapture(e.pointerId); } catch {} moveDrag(e); return; }
+    act(0, a);
+  });
+  b.addEventListener('pointermove', e => { if (drag && drag.id === id) moveDrag(e); });
+  const end = () => { if (drag && drag.id === id) { drag = null; saveConfig(); } };
+  b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+};
+bind('bL', 'left'); bind('bR', 'right'); bind('bJ', 'jump'); bind('bS', 'slide'); bind('bP', 'power');
+
+/* ================= MENU ================= */
+function refreshMenu() {
+  for (const b of $('modeSeg').children) b.classList.toggle('on', +b.dataset.n === sel.players);
+  for (const b of $('distSeg').children) {
+    b.classList.toggle('on', b.dataset.d === sel.dist);
+    if (b.dataset.d === 'inf') b.classList.toggle('hidden', sel.players > 1); // corrida multiplayer sempre tem linha de chegada
+  }
+  refreshHelp();
+}
+function refreshHelp() {
+  const h = $('help'); h.textContent = '';
+  const line = t => { const d = document.createElement('div'); d.textContent = t; h.appendChild(d); };
+  const K = (p, a) => keyName(cfg.keys[p][a]);
+  if (sel.players === 1) {
+    line(K(0, 'left') + ' / ' + K(0, 'right') + ' ou ' + K(1, 'left') + ' / ' + K(1, 'right') + ' trocam de pista · ' + K(0, 'jump') + ', ' + K(1, 'jump') + ' ou Espaço pula · ' + K(0, 'slide') + ' ou ' + K(1, 'slide') + ' desliza');
+    line('No celular: deslize a tela ou use os botões.');
+  } else {
+    line('Teclas de cada jogador (esquerda · direita · pular · deslizar · poder):');
+    for (let p = 0; p < sel.players; p++) line('Jogador ' + (p + 1) + ': ' + ACTIONS.map(([a]) => K(p, a)).join('  ·  '));
+    line('📦 Caixas a cada 300 m dão um poder aleatório; ative com a tecla de poder.');
+    line('Bater em obstáculos não elimina: você só perde velocidade por um instante. Esc pausa.');
+  }
+}
+$('modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  sel.players = +b.dataset.n;
+  if (sel.players > 1 && sel.dist === 'inf') sel.dist = 'fast';
+  else if (sel.players === 1) sel.dist = soloDist;
+  refreshMenu();
+});
+$('distSeg').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  sel.dist = b.dataset.d; if (sel.players === 1) soloDist = sel.dist;
+  refreshMenu();
+});
+$('play').addEventListener('click', startGame);
+$('again').addEventListener('click', startGame);
+$('rAgain').addEventListener('click', startGame);
+$('oMenu').addEventListener('click', goMenu);
+$('rMenu').addEventListener('click', goMenu);
+$('pMenu').addEventListener('click', goMenu);
+$('resume').addEventListener('click', resume);
+$('pauseBtn').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); pause(); });
+$('btnSettings').addEventListener('click', openSettings);
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button'); if (b) b.blur(); });
+document.addEventListener('visibilitychange', () => { clock.getDelta(); if (document.hidden) pause(); });
+
+/* ================= CONFIGURAÇÕES ================= */
+const setMsg = t => { $('setMsg').textContent = t; };
+function renderKeyGrid() {
+  const g = $('keyGrid'); g.textContent = '';
+  const cell = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; g.appendChild(d); return d; };
+  cell('', '');
+  for (let p = 0; p < 4; p++) { const h = cell('h', 'Jogador ' + (p + 1)); h.style.background = PCOLOR[p]; }
+  for (const [a, label] of ACTIONS) {
+    cell('al', label);
+    for (let p = 0; p < 4; p++) {
+      const b = document.createElement('button');
+      b.className = 'keybtn'; b.dataset.p = p; b.dataset.a = a; b.textContent = keyName(cfg.keys[p][a]);
+      b.setAttribute('aria-label', 'Jogador ' + (p + 1) + ' ' + label + ': ' + keyName(cfg.keys[p][a]));
+      g.appendChild(b);
+    }
+  }
+}
+$('keyGrid').addEventListener('click', e => {
+  const b = e.target.closest('.keybtn'); if (!b) return;
+  capturing = null; renderKeyGrid();
+  const nb = $('keyGrid').querySelector('.keybtn[data-p="' + b.dataset.p + '"][data-a="' + b.dataset.a + '"]');
+  capturing = { p: +b.dataset.p, a: b.dataset.a };
+  nb.classList.add('cap'); nb.textContent = '…';
+  setMsg('Pressione a nova tecla para Jogador ' + (+b.dataset.p + 1) + ' · ' + ACTIONS.find(x => x[0] === b.dataset.a)[1] + ' (Esc cancela)');
+});
+function assignKey(p, a, code) { // atribui a tecla; se estiver em uso, as duas ações trocam de tecla
+  let msg = '';
+  for (let q = 0; q < 4; q++) for (const [b, label] of ACTIONS) {
+    if (cfg.keys[q][b] === code && !(q === p && b === a)) {
+      cfg.keys[q][b] = cfg.keys[p][a];
+      msg = 'A tecla ' + keyName(code) + ' estava em Jogador ' + (q + 1) + ' · ' + label + ' — as duas foram trocadas.';
+    }
+  }
+  cfg.keys[p][a] = code; return msg;
+}
+window.addEventListener('keydown', e => { // captura da nova tecla (fase de captura: roda antes do handler do jogo)
+  if (!capturing) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const code = e.code;
+  if (code === 'Escape') { capturing = null; renderKeyGrid(); setMsg(''); return; }
+  if (!allowedKey(code)) { setMsg('Essa tecla não pode ser usada. Escolha outra.'); return; }
+  if (e.repeat) return;
+  const { p, a } = capturing; const msg = assignKey(p, a, code);
+  capturing = null;
+  saveConfig(); rebuildKeymap(); renderKeyGrid(); refreshHelp();
+  setMsg(msg || '✔ Tecla salva: ' + keyName(code));
+}, true);
+function openSettings() { showScreen('settings'); setState('settings'); renderKeyGrid(); setMsg(''); }
+function closeSettings() { revokeCu(); capturing = null; showScreen('menu'); setState('menu'); refreshMenu(); }
+$('setBack').addEventListener('click', closeSettings);
+$('btnResetPower').addEventListener('click', () => {
+  capturing = null;
+  for (let p = 0; p < 4; p++) assignKey(p, 'power', DEFAULT_KEYS[p].power);
+  saveConfig(); rebuildKeymap(); renderKeyGrid(); refreshHelp(); setMsg('✔ Teclas de poder restauradas para o padrão.');
+});
+$('btnReset').addEventListener('click', () => {
+  capturing = null;
+  cfg = { keys: cloneKeys(DEFAULT_KEYS), touch: {} };
+  saveConfig(); rebuildKeymap(); applyTouchPositions(); renderKeyGrid(); refreshHelp();
+  setMsg('✔ Controles e botões virtuais restaurados para o padrão.');
+});
+function startEditTouch() { capturing = null; showScreen(null); setState('editTouch'); $('editBar').classList.remove('hidden'); }
+function endEditTouch() { drag = null; saveConfig(); $('editBar').classList.add('hidden'); openSettings(); setMsg('✔ Posição dos botões virtuais salva.'); }
+$('btnTouch').addEventListener('click', startEditTouch);
+$('editDone').addEventListener('click', endEditTouch);
+$('editReset').addEventListener('click', () => { cfg.touch = {}; applyTouchPositions(); saveConfig(); });
+
+/* ================= HUD ================= */
+const hc = { d: -1, c: -1, s: -1 };
+let lastTime = -1;
+function updateHud() {
+  if (race.n === 1) { // HUD original do modo solo
+    const w = active[0], total = race.total;
+    const d = Math.floor(w.dist), s = score(w);
+    if (d !== hc.d) {
+      $('hDist').textContent = total ? fmt(Math.min(d, total)) + ' / ' + fmt(total) : d; hc.d = d;
+      if (total) $('sbar').firstChild.style.width = Math.min(100, d / total * 100) + '%';
+    }
+    if (w.coins !== hc.c) { $('hCoins').textContent = w.coins; hc.c = w.coins; }
+    if (s !== hc.s) { $('score').firstChild.nodeValue = s; hc.s = s; }
+    return;
+  }
+  const total = race.total, order = rankOrder();
+  for (let i = 0; i < race.n; i++) {
+    const w = active[i], h = huds[i], c = h.cache;
+    const d = Math.min(total, Math.floor(w.dist));
+    const pct = Math.min(100, Math.floor(w.dist / total * 100));
+    const pw = Math.min(100, Math.round(w.dist / total * 1000) / 10);
+    const rk = order.indexOf(i) + 1;
+    if (c.d !== d) { h.d.textContent = fmt(d) + ' / ' + fmt(total) + ' m'; c.d = d; if (pRows[i]) pRows[i].t.textContent = 'Jogador ' + (i + 1) + ': ' + fmt(d) + ' / ' + fmt(total) + ' m — ' + pct + '%'; }
+    if (c.pct !== pct) { h.p.textContent = pct + '%'; c.pct = pct; if (cRows[i]) cRows[i].p.textContent = pct + '%'; if (pRows[i]) pRows[i].t.textContent = 'Jogador ' + (i + 1) + ': ' + fmt(d) + ' / ' + fmt(total) + ' m — ' + pct + '%'; }
+    if (c.pw !== pw) { h.bar.style.width = pw + '%'; c.pw = pw; if (pRows[i]) pRows[i].bar.style.width = pw + '%'; if (cRows[i]) cRows[i].bar.style.width = pw + '%'; }
+    if (c.rk !== rk) { h.rk.textContent = rk + 'º'; c.rk = rk; }
+    if (c.c !== w.coins) { h.c.textContent = '🪙 ' + w.coins; c.c = w.coins; }
+    const s = score(w); if (c.s !== s) { h.s.textContent = fmt(s) + ' pts'; c.s = s; }
+  }
+  const sec = Math.floor(race.time);
+  if (sec !== lastTime) { lastTime = sec; $('pcTime').textContent = '⏱ ' + fmtTime(race.time); }
+}
+
+/* ================= LOOP PRINCIPAL ================= */
+function update(dt) {
+  const playing = state === 'playing';
+  if (playing) race.time += dt;
+  const mode = playing ? 'play' : (state === 'menu' || state === 'settings' || state === 'editTouch') ? 'idle' : 'still';
+  for (const w of active) w.update(dt, mode);
+  if (playing) { updateHud(); if (race.n > 1) updatePowerHud(); if (state === 'playing') checkRaceEnd(); }
+}
+function render() { // um viewport por jogador (scissor evita desenhar fora da área de cada um)
+  const W = window.innerWidth, H = window.innerHeight;
+  if (active.length === 1) {
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H);
+    renderer.render(active[0].scene, active[0].camera);
+    return;
+  }
+  renderer.setScissorTest(true);
+  renderer.setViewport(0, 0, W, H); renderer.setScissor(0, 0, W, H);
+  renderer.setClearColor(0x12122b, 1); renderer.clear();
+  for (const w of active) {
+    const r = w.rect, y = H - r.y - r.h;
+    renderer.setViewport(r.x, y, r.w, r.h); renderer.setScissor(r.x, y, r.w, r.h);
+    renderer.render(w.scene, w.camera);
+  }
+}
+const clock = new THREE.Clock();
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (state === 'paused' || state === 'results') { // imagem congelada: só redesenha se a janela mudou
+    if (needRender) { render(); needRender = false; }
+    return;
+  }
+  update(dt);
+  render();
+  needRender = false;
+}
+
+/* ================= ÁUDIO (sons gerados por código + música) ================= */
+const AUDIO_KEY = 'corredoresAudio', PERS_KEY = 'corredoresPers';
+function loadAudioCfg() {
+  const d = { sfx: { on: true, vol: 70 }, music: { on: true, vol: 50 }, gen: { on: true, vol: 70 } };
+  try {
+    const r = JSON.parse(localStorage.getItem(AUDIO_KEY) || 'null');
+    if (r) for (const k in d) if (r[k]) {
+      if (typeof r[k].on === 'boolean') d[k].on = r[k].on;
+      if (Number.isFinite(r[k].vol)) d[k].vol = clamp(Math.round(r[k].vol / 10) * 10, 0, 100);
+    }
+  } catch {}
+  return d;
+}
+const aud = loadAudioCfg();
+const saveAud = () => { try { localStorage.setItem(AUDIO_KEY, JSON.stringify(aud)); } catch {} };
+const A = { ctx: null, buses: {}, duck: null, el: null, url: null, track: null, def: null, noise: null, last: {}, started: false };
+function audioInit() { // criado no primeiro gesto do usuário (exigência dos navegadores)
+  if (!A.ctx) {
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      A.ctx = new C();
+      for (const k of ['sfx', 'gen']) { const g = A.ctx.createGain(); g.connect(A.ctx.destination); A.buses[k] = g; }
+      const m = A.ctx.createGain(); m.connect(A.ctx.destination); A.buses.music = m;
+      A.duck = A.ctx.createGain(); A.duck.connect(m); // "duck" abaixa a música na vitória sem mexer no volume do usuário
+      applyVol(true);
+    } catch { A.ctx = null; return; }
+  }
+  if (A.ctx.state === 'suspended') A.ctx.resume().catch(() => {});
+}
+function applyVol(now) {
+  if (!A.ctx) return;
+  const t = A.ctx.currentTime;
+  for (const k of ['sfx', 'music', 'gen']) A.buses[k].gain.setTargetAtTime((aud[k].on ? Math.pow(aud[k].vol / 100, 2) : 0) * (k === 'music' ? 0.6 : 0.8), t, now ? 0.001 : 0.05);
+}
+function duck(on) { if (A.ctx) A.duck.gain.setTargetAtTime(on ? 0.25 : 1, A.ctx.currentTime, on ? 0.7 : 0.2); }
+function env(g, t, d, v) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.01 + d); }
+function tone(bus, f0, f1, d, type, v, delay = 0) {
+  const c = A.ctx, t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + d);
+  env(g, t, d, v); o.connect(g); g.connect(bus); o.start(t); o.stop(t + d + 0.05);
+}
+function nz(bus, d, ft, f0, f1, v, delay = 0) {
+  const c = A.ctx, t = c.currentTime + delay, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  if (!A.noise) { const b = c.createBuffer(1, c.sampleRate, c.sampleRate), a = b.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; A.noise = b; }
+  s.buffer = A.noise; s.loop = true; f.type = ft; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + d);
+  env(g, t, d, v); s.connect(f); f.connect(g); g.connect(bus); s.start(t); s.stop(t + d + 0.05);
+}
+// nome: [categoria, intervalo mínimo (ms) entre repetições, gerador]
+const SND = {
+  click: ['gen', 60, b => { tone(b, 540, 460, 0.1, 'sine', 0.1); tone(b, 810, 700, 0.07, 'sine', 0.05, 0.02); }],
+  jump: ['sfx', 90, b => { nz(b, 0.18, 'lowpass', 700, 160, 0.4); tone(b, 170, 80, 0.12, 'sine', 0.25); }],
+  hit: ['sfx', 140, b => { tone(b, 140, 40, 0.3, 'sine', 0.6); nz(b, 0.2, 'lowpass', 1000, 180, 0.5); }],
+  pickup: ['sfx', 100, b => { [660, 880, 1320].forEach((f, i) => tone(b, f, f, 0.18, 'triangle', 0.18, i * 0.07)); tone(b, 1760, 1760, 0.3, 'sine', 0.06, 0.2); }],
+  dark: ['sfx', 250, b => { tone(b, 320, 60, 0.9, 'sawtooth', 0.1); nz(b, 0.9, 'lowpass', 500, 80, 0.25); }],
+  speed: ['sfx', 250, b => { nz(b, 0.5, 'bandpass', 400, 2600, 0.3); tone(b, 220, 880, 0.45, 'sawtooth', 0.07); }],
+  extra: ['sfx', 250, b => { [0, 0.12, 0.24].forEach((d, i) => { tone(b, 150 - i * 15, 90, 0.14, 'square', 0.12, d); nz(b, 0.08, 'lowpass', 600, 200, 0.2, d); }); }],
+  bolt: ['sfx', 250, b => { [0, 0.06, 0.14, 0.2].forEach(d => nz(b, 0.05, 'bandpass', 3500, 1800, 0.35, d)); nz(b, 1.3, 'lowpass', 220, 50, 0.7, 0.12); tone(b, 70, 30, 1.1, 'sine', 0.4, 0.12); }],
+  lock: ['sfx', 250, b => { tone(b, 320, 300, 0.12, 'square', 0.1); tone(b, 513, 490, 0.12, 'square', 0.08, 0.001); tone(b, 230, 230, 0.18, 'square', 0.08, 0.1); }],
+  victory: ['gen', 0, b => { [523, 659, 784, 1047].forEach((f, i) => { tone(b, f, f, 0.35, 'triangle', 0.22, i * 0.13); tone(b, f, f, 1.3, 'triangle', 0.1, 0.56); }); }]
+};
+function snd(name) { // respeita liga/desliga e volume de cada categoria; limita repetições seguidas
+  const s = SND[name]; if (!s || !A.ctx || A.ctx.state !== 'running') return;
+  const [cat, gap, fn] = s; if (!aud[cat].on || !aud[cat].vol) return;
+  const now = performance.now(); if (now - (A.last[name] || -1e9) < gap) return;
+  A.last[name] = now; try { fn(A.buses[cat]); } catch {}
+}
+function onFinish() { if (race.vic) return; race.vic = true; duck(true); snd('victory'); } // 1ª chegada da corrida: vitória uma única vez
+// música padrão gerada por código (loop suave); músicas importadas tocam por um <audio> ligado ao mesmo barramento
+const CH = [[261.6, 329.6, 392], [220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7]];
+function defStart() {
+  if (A.def || !A.ctx) return;
+  let step = 0, next = A.ctx.currentTime + 0.1;
+  A.def = setInterval(() => {
+    while (next < A.ctx.currentTime + 0.6) {
+      const ch = CH[(step >> 3) % 4], f = ch[[0, 1, 2, 1][step % 4]] * (step % 8 >= 4 ? 2 : 1), dl = next - A.ctx.currentTime;
+      tone(A.duck, f, f, 0.5, 'triangle', 0.12, dl);
+      if (step % 8 === 0) ch.forEach(x => tone(A.duck, x / 2, x / 2, 1.9, 'sine', 0.07, dl));
+      next += 0.3; step++;
+    }
+  }, 150);
+}
+function defStop() { clearInterval(A.def); A.def = null; }
+function dropEl() { if (A.el) { A.el.pause(); A.el.removeAttribute('src'); A.el.load(); } if (A.url) { URL.revokeObjectURL(A.url); A.url = null; } }
+function musicEl() {
+  if (!A.el) {
+    const e = new Audio(); e.loop = true; e.preload = 'auto';
+    e.onerror = () => { if (A.track && A.track[0] === 'm') { cuMsg('Não foi possível tocar essa música. Usando a música padrão.'); A.track = null; pers.music = 'default'; savePers(); playMusic(); } };
+    A.el = e; A.ctx.createMediaElementSource(e).connect(A.duck);
+  }
+  return A.el;
+}
+const slotVer = {};
+async function playMusic() { // só reinicia se a faixa escolhida mudou; nunca ao trocar de tela
+  if (!A.ctx) return;
+  if (!aud.music.on) { defStop(); if (A.el) A.el.pause(); A.track = null; return; }
+  const want = pers.music, key = want === 'default' ? 'd' : 'm' + want + '.' + (slotVer[want] || 0);
+  if (A.track === key) { if (key === 'd') defStart(); else if (A.el && A.el.paused) A.el.play().catch(() => {}); return; }
+  A.track = key;
+  if (key === 'd') { dropEl(); defStart(); return; }
+  defStop();
+  try {
+    const rec = await DB.get('music:' + want);
+    if (A.track !== key) return;
+    if (!rec) { pers.music = 'default'; savePers(); A.track = null; playMusic(); return; }
+    const e = musicEl(), old = A.url; A.url = URL.createObjectURL(rec); e.src = A.url; if (old) URL.revokeObjectURL(old);
+    await e.play();
+  } catch {}
+}
+window.addEventListener('pointerdown', audioInit, true);
+window.addEventListener('keydown', audioInit, true);
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button'); if (b && !b.disabled) snd('click'); });
+document.addEventListener('visibilitychange', () => { if (A.ctx) (document.hidden ? A.ctx.suspend() : A.ctx.resume()).catch(() => {}); });
+
+/* ================= ARMAZENAMENTO (IndexedDB) E PERSONALIZAÇÃO ================= */
+const DB = {
+  p: null,
+  open() {
+    return this.p || (this.p = new Promise((res, rej) => {
+      const r = indexedDB.open('corredoresDB', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('files');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }).catch(e => { this.p = null; throw e; }));
+  },
+  async run(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('files', mode), q = fn(t.objectStore('files')); t.oncomplete = () => res(q && q.result); t.onerror = t.onabort = () => rej(t.error); });
+  },
+  get(k) { return this.run('readonly', s => s.get(k)); },
+  put(k, v) { return this.run('readwrite', s => s.put(v, k)).catch(() => { throw new Error('Não foi possível salvar no armazenamento do navegador (modo privado ou espaço cheio?).'); }); },
+  del(k) { return this.run('readwrite', s => s.delete(k)).catch(() => {}); }
+};
+const slotMeta = { music: [null, null, null, null], skin: [null, null, null, null] };
+let pers = { music: 'default', skins: [null, null, null, null] };
+try {
+  const r = JSON.parse(localStorage.getItem(PERS_KEY) || 'null');
+  if (r) {
+    if (r.music === 'default' || [0, 1, 2, 3].includes(r.music)) pers.music = r.music;
+    if (Array.isArray(r.skins)) pers.skins = [0, 1, 2, 3].map(i => [0, 1, 2, 3].includes(r.skins[i]) ? r.skins[i] : null);
+  }
+} catch {}
+const savePers = () => { try { localStorage.setItem(PERS_KEY, JSON.stringify(pers)); } catch {} };
+async function loadMetas() { // só os nomes; os arquivos são lidos sob demanda
+  for (const kind of ['music', 'skin']) for (let i = 0; i < 4; i++) { try { slotMeta[kind][i] = (await DB.get(kind + ':' + i + ':meta')) || null; } catch {} }
+  if (pers.music !== 'default' && !slotMeta.music[pers.music]) pers.music = 'default';
+  pers.skins = pers.skins.map(v => (v !== null && slotMeta.skin[v]) ? v : null); savePers();
+}
+const MAX_IMG = 8 * 1024 * 1024, MAX_AUD = 30 * 1024 * 1024, baseName = n => n.replace(/\.[^.]+$/, '');
+async function importMusic(slot, file) {
+  if (!/\.(mp3|wav|ogg)$/i.test(file.name) && !/^audio\/(mpeg|mp3|wav|x-wav|wave|ogg)/.test(file.type)) throw new Error('Formato não suportado. Use MP3, WAV ou OGG.');
+  if (file.size > MAX_AUD) throw new Error('Arquivo muito grande (máximo 30 MB).');
+  await new Promise((res, rej) => { // confere se o áudio abre antes de salvar
+    const a = new Audio(), u = URL.createObjectURL(file);
+    const done = ok => { clearTimeout(tm); a.removeAttribute('src'); URL.revokeObjectURL(u); ok ? res() : rej(new Error('Não foi possível ler esse áudio. O arquivo pode estar corrompido.')); };
+    const tm = setTimeout(() => done(false), 8000);
+    a.preload = 'metadata'; a.onloadedmetadata = () => done(true); a.onerror = () => done(false); a.src = u;
+  });
+  const meta = { name: baseName(file.name) };
+  await DB.put('music:' + slot, file); await DB.put('music:' + slot + ':meta', meta);
+  slotMeta.music[slot] = meta; slotVer[slot] = (slotVer[slot] || 0) + 1;
+  if (pers.music === slot && state !== 'playing' && state !== 'paused') playMusic(); // nunca interrompe uma corrida
+}
+async function removeMusic(slot) {
+  await DB.del('music:' + slot); await DB.del('music:' + slot + ':meta'); slotMeta.music[slot] = null;
+  if (pers.music === slot) { pers.music = 'default'; savePers(); if (state !== 'playing' && state !== 'paused') playMusic(); }
+}
+const skinTex = new Map();
+function dropSkinTex(slot) { for (const [k, t] of skinTex) if (k.startsWith(slot + '_')) { t.dispose(); skinTex.delete(k); } }
+async function skinTexture(slot, p) {
+  const k = slot + '_' + p; if (skinTex.has(k)) return skinTex.get(k);
+  const blob = await DB.get('skin:' + slot); if (!blob) return null;
+  const bmp = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.save(); g.beginPath(); g.arc(128, 128, 116, 0, 6.2832); g.clip(); g.drawImage(bmp, 0, 0, 256, 256); g.restore();
+  g.lineWidth = 16; g.strokeStyle = PCOLOR[p]; g.beginPath(); g.arc(128, 128, 120, 0, 6.2832); g.stroke();
+  if (bmp.close) bmp.close();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; skinTex.set(k, t); return t;
+}
+let skinGen = 0;
+async function applySkins() { // cada mundo (jogador) recebe somente a skin escolhida por ele
+  const gen = ++skinGen;
+  for (let i = 0; i < worlds.length; i++) {
+    const sl = pers.skins[i]; let t = null;
+    if (sl !== null && slotMeta.skin[sl]) { try { t = await skinTexture(sl, i); } catch {} }
+    if (gen !== skinGen) return;
+    worlds[i].setSkin(t);
+  }
+}
+async function importSkin(slot, file) {
+  if (!/\.(png|jpe?g)$/i.test(file.name) && !/^image\/(png|jpeg)$/.test(file.type)) throw new Error('Formato não suportado. Use PNG, JPG ou JPEG.');
+  if (file.size > MAX_IMG) throw new Error('Imagem muito grande (máximo 8 MB).');
+  let bmp; try { bmp = await createImageBitmap(file); } catch { throw new Error('Não foi possível abrir essa imagem. O arquivo pode estar corrompido.'); }
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const q = Math.min(bmp.width, bmp.height); c.getContext('2d').drawImage(bmp, (bmp.width - q) / 2, (bmp.height - q) / 2, q, q, 0, 0, 256, 256);
+  if (bmp.close) bmp.close();
+  const blob = await new Promise(r => c.toBlob(r, 'image/png')); if (!blob) throw new Error('Falha ao processar a imagem.');
+  const meta = { name: baseName(file.name) };
+  await DB.put('skin:' + slot, blob); await DB.put('skin:' + slot + ':meta', meta);
+  slotMeta.skin[slot] = meta; dropSkinTex(slot); applySkins();
+}
+async function removeSkin(slot) {
+  await DB.del('skin:' + slot); await DB.del('skin:' + slot + ':meta'); slotMeta.skin[slot] = null; dropSkinTex(slot);
+  pers.skins = pers.skins.map(v => v === slot ? null : v); savePers(); applySkins();
+}
+/* ---- telas ---- */
+let cuUrls = [], busy = false;
+const revokeCu = () => { cuUrls.forEach(u => URL.revokeObjectURL(u)); cuUrls = []; };
+const cuMsg = t => { const e = $('cuMsg'); if (e) e.textContent = t; };
+function mk(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; }
+function mkBtn(label, fn, cls = 'alt') { const b = mk('button', 'btn xs ' + cls, label); b.addEventListener('click', fn); return b; }
+let pend = null;
+function pickFile(kind, slot) { pend = { kind, slot }; const i = $(kind === 'skin' ? 'skinFile' : 'musicFile'); i.value = ''; i.click(); }
+async function renderCustom() {
+  revokeCu();
+  const sk = $('skinSlots'), pk = $('skinPick'), mu = $('musicSlots'); sk.textContent = ''; pk.textContent = ''; mu.textContent = '';
+  for (let i = 0; i < 4; i++) {
+    const m = slotMeta.skin[i], d = mk('div', 'slot'), th = mk('div', 'thumb', m ? '' : '+');
+    if (m) { try { const b = await DB.get('skin:' + i); if (b) { const u = URL.createObjectURL(b); cuUrls.push(u); th.style.backgroundImage = 'url(' + u + ')'; } } catch {} }
+    const nm = mk('div', '', 'Skin ' + (i + 1)); nm.appendChild(document.createElement('br')); nm.appendChild(mk('small', '', m ? m.name : 'vazio'));
+    const r = mk('div', 'row'); r.style.gap = '6px';
+    r.appendChild(mkBtn(m ? 'Substituir' : 'Importar', () => pickFile('skin', i), m ? 'alt' : ''));
+    if (m) r.appendChild(mkBtn('Remover', async () => { await removeSkin(i); cuMsg('Skin removida.'); renderCustom(); }, 'danger'));
+    d.append(th, nm, r); sk.appendChild(d);
+  }
+  for (let p = 0; p < 4; p++) {
+    const row = mk('div', 'prow2'), h = mk('span', 'kgrid h', 'Jogador ' + (p + 1)); h.style.cssText = 'background:' + PCOLOR[p] + ';display:inline-block;padding:6px 12px;border-radius:999px;color:var(--ink);font-weight:900';
+    const seg = mk('div', 'seg'); seg.style.gap = '6px';
+    const opts = [[null, 'Padrão']].concat([0, 1, 2, 3].filter(i => slotMeta.skin[i]).map(i => [i, 'Skin ' + (i + 1)]));
+    for (const [v, lb] of opts) {
+      const c = mk('button', 'chip sm' + (pers.skins[p] === v ? ' on' : ''), lb);
+      c.addEventListener('click', () => { pers.skins[p] = v; savePers(); applySkins(); renderCustom(); }); seg.appendChild(c);
+    }
+    row.append(h, seg); pk.appendChild(row);
+  }
+  const rowM = (label, sub, sel, btns) => { const r = mk('div', 'mrow'), n = mk('div', 'nm', label); if (sub) n.appendChild(mk('small', '', sub)); const g = mk('div', 'row'); g.style.gap = '6px'; btns.forEach(b => g.appendChild(b)); r.append(n, g); mu.appendChild(r); };
+  rowM('🎵 Música padrão do jogo', pers.music === 'default' ? 'em uso' : '', 0, [mkBtn(pers.music === 'default' ? '✔ Em uso' : 'Usar', () => { pers.music = 'default'; savePers(); if (A.started && state !== 'playing' && state !== 'paused') playMusic(); renderCustom(); }, pers.music === 'default' ? '' : 'alt')]);
+  for (let i = 0; i < 4; i++) {
+    const m = slotMeta.music[i], b = [];
+    if (m) b.push(mkBtn(pers.music === i ? '✔ Em uso' : 'Usar', () => { pers.music = i; savePers(); if (A.started && state !== 'playing' && state !== 'paused') playMusic(); renderCustom(); }, pers.music === i ? '' : 'alt'));
+    b.push(mkBtn(m ? 'Trocar arquivo' : 'Importar', () => pickFile('music', i), m ? 'alt' : ''));
+    if (m) b.push(mkBtn('Remover', async () => { await removeMusic(i); cuMsg('Música removida.'); renderCustom(); }, 'danger'));
+    rowM('Música ' + (i + 1) + (m ? ': ' + m.name : ''), m ? '' : 'vazio', 0, b);
+  }
+}
+async function onPicked(kind, e) {
+  const f = e.target.files && e.target.files[0]; if (!f || !pend || pend.kind !== kind || busy) return;
+  busy = true; cuMsg('Importando…');
+  try { await (kind === 'skin' ? importSkin : importMusic)(pend.slot, f); cuMsg('✔ Importado: ' + f.name); }
+  catch (err) { cuMsg('⚠️ ' + (err && err.message || 'Não foi possível importar.')); }
+  busy = false; if (!$('custom').classList.contains('hidden')) renderCustom();
+}
+$('skinFile').addEventListener('change', e => onPicked('skin', e));
+$('musicFile').addEventListener('change', e => onPicked('music', e));
+$('btnCustom').addEventListener('click', () => { showScreen('custom'); setState('settings'); cuMsg(''); renderCustom(); });
+$('cuBack').addEventListener('click', closeSettings);
+const AUD_ROWS = [['sfx', '🔊 Efeitos sonoros', 'pulo, batida, caixas e poderes'], ['music', '🎵 Música de fundo', ''], ['gen', '🔔 Sons gerais', 'cliques do menu e vitória']];
+function renderAudio() {
+  const g = $('audRows'); g.textContent = '';
+  for (const [k, label, sub] of AUD_ROWS) {
+    const c = aud[k], r = mk('div', 'arow'), n = mk('div', 'nm', label); if (sub) n.appendChild(mk('small', '', sub));
+    const tg = mk('button', 'chip sm' + (c.on ? ' on' : ''), c.on ? 'Ligado' : 'Desligado');
+    tg.addEventListener('click', () => { c.on = !c.on; saveAud(); applyVol(); if (k === 'music' && A.started) playMusic(); renderAudio(); });
+    const step = d => () => { c.vol = clamp(c.vol + d, 0, 100); saveAud(); applyVol(); if (k === 'sfx') snd('pickup'); renderAudio(); };
+    const v = mk('div', 'vctl'), bar = mk('div', 'vbar'), fill = mk('i'); fill.style.width = c.vol + '%'; bar.appendChild(fill);
+    const mi = mkBtn('−', step(-10)), pl = mkBtn('+', step(10)); mi.setAttribute('aria-label', 'Diminuir volume'); pl.setAttribute('aria-label', 'Aumentar volume');
+    v.append(mi, bar, pl, mk('span', 'pc', c.vol + '%')); r.append(n, tg, v); g.appendChild(r);
+  }
+}
+$('btnAudio').addEventListener('click', () => { showScreen('audio'); setState('settings'); renderAudio(); });
+$('auBack').addEventListener('click', closeSettings);
+
+/* ================= INICIALIZAÇÃO ================= */
+getWorld(0);
+setActive(1);
+refreshMenu();
+loop();
+loadMetas().then(applySkins);
+loadAsh().finally(() => { $('play').disabled = false; $('play').textContent = '▶ Iniciar partida'; });
+</script>
+</body>
+</html>

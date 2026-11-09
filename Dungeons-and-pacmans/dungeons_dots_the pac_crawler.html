@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeons & Dots: The Pac-Crawler</title>
+    <!-- Tailwind CSS para estilização moderna e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Metamorphous&display=swap" rel="stylesheet">
+    <style>
+        .font-medieval { font-family: 'MedievalSharp', cursive; }
+        .font-fantasy { font-family: 'Metamorphous', cursive; }
+        canvas {
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body class="bg-stone-950 text-amber-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 select-none font-sans">
+
+    <!-- Container Principal do Jogo -->
+    <div class="flex flex-col lg:flex-row gap-4 items-center justify-center w-full max-w-6xl">
+        
+        <!-- Canvas do Jogo -->
+        <div class="relative bg-stone-900 border-4 border-amber-900 rounded-xl shadow-2xl p-2 flex flex-col items-center">
+            <div class="absolute -top-3 bg-amber-900 text-amber-200 px-4 py-0.5 rounded-full border border-amber-600 font-medieval text-sm shadow-md">
+                MASMORRA DE DUNGEONS & DOTS
+            </div>
+            
+            <canvas id="gameCanvas" width="456" height="504" class="rounded bg-black shadow-inner mt-2 border border-stone-800"></canvas>
+            
+            <div class="text-xs text-amber-400/60 mt-2 font-mono text-center">
+                Use WASD ou as Setas do teclado para mover o Herói
+            </div>
+        </div>
+
+        <!-- Painel Lateral / Ficha do RPG -->
+        <div class="w-full lg:w-80 bg-stone-900 border-4 border-amber-800 rounded-xl p-4 flex flex-col justify-between shadow-2xl space-y-4">
+            <div>
+                <!-- Título -->
+                <div class="text-center mb-4 border-b-2 border-amber-800/50 pb-2">
+                    <h1 class="font-medieval text-2xl text-amber-500 tracking-wider">DUNGEONS & DOTS</h1>
+                    <p class="text-xs text-amber-300/70 italic font-fantasy">The Pac-Crawler</p>
+                </div>
+
+                <!-- Status de Atributos -->
+                <div class="space-y-4 mb-4">
+                    <div>
+                        <div class="text-xs text-amber-200/60 font-semibold mb-1">PONTOS DE VIDA (HP)</div>
+                        <div id="hpContainer" class="flex gap-2">
+                            <!-- Rendereizado via JS -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-xs text-amber-200/60 font-semibold mb-1">TESOURO COLETADO (GP)</div>
+                        <div id="scoreText" class="text-2xl font-bold text-amber-400 font-mono">0 GP</div>
+                    </div>
+
+                    <div>
+                        <div class="text-xs text-amber-200/60 font-semibold mb-1">DURAÇÃO DO ATAQUE CRÍTICO</div>
+                        <div class="w-full bg-stone-950 rounded-full h-3 border border-amber-900 overflow-hidden">
+                            <div id="powerBar" class="bg-amber-500 h-full w-0 transition-all duration-100"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diário da Masmorra -->
+                <div>
+                    <div class="text-xs text-amber-200/60 font-semibold mb-1">DIÁRIO DE AVENTURA</div>
+                    <div id="gameLog" class="bg-stone-950/90 border border-amber-900/60 rounded p-2 h-36 overflow-y-auto font-mono text-xs text-amber-200/80 space-y-1">
+                        <p class="text-amber-500 italic">> Adentrando a masmorra mística...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles Touch para Mobile -->
+            <div class="pt-2 border-t border-amber-900/40 flex flex-col items-center">
+                <div class="text-xs text-amber-200/60 font-semibold mb-2">CONTROLES TOUCH</div>
+                <div class="grid grid-cols-3 gap-1 w-36 h-36">
+                    <div></div>
+                    <button id="btnUp" class="bg-amber-900/80 hover:bg-amber-700 active:bg-amber-600 text-amber-100 font-bold rounded flex items-center justify-center text-xl shadow border border-amber-700 select-none">▲</button>
+                    <div></div>
+                    <button id="btnLeft" class="bg-amber-900/80 hover:bg-amber-700 active:bg-amber-600 text-amber-100 font-bold rounded flex items-center justify-center text-xl shadow border border-amber-700 select-none">◀</button>
+                    <button id="btnDown" class="bg-amber-900/80 hover:bg-amber-700 active:bg-amber-600 text-amber-100 font-bold rounded flex items-center justify-center text-xl shadow border border-amber-700 select-none">▼</button>
+                    <button id="btnRight" class="bg-amber-900/80 hover:bg-amber-700 active:bg-amber-600 text-amber-100 font-bold rounded flex items-center justify-center text-xl shadow border border-amber-700 select-none">▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Fim de Jogo -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-stone-900 border-4 border-amber-700 rounded-xl p-6 text-center max-w-sm w-full shadow-2xl">
+            <h2 id="modalTitle" class="font-medieval text-3xl text-amber-500 mb-2">FIM DE JOGO</h2>
+            <p id="modalDesc" class="text-amber-200/80 text-sm mb-4">Você sucumbiu aos perigos da masmorra!</p>
+            <div class="text-xl font-bold text-amber-400 mb-6 font-mono" id="finalScore">0 GP</div>
+            <button onclick="restartGame()" class="w-full bg-amber-700 hover:bg-amber-600 active:bg-amber-800 text-amber-100 font-bold py-3 px-6 rounded-lg border border-amber-500 transition-colors shadow-lg">Reiniciar Aventura</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ÁUDIO SINTETIZADO (WEB AUDIO API) ---
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'power') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.25);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'eat') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(160, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        // --- MAPA DA MASMORRA E GRID ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const TILE_SIZE = 24;
+        const ROWS = 21;
+        const COLS = 19;
+
+        // 1: Parede de Pedra, 0: Moeda (GP), 2: Runa Mágica, 3: Vazio
+        const initialBoard = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,2,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,1,1,3,1,3,1,1,1,0,1,1,1,1],
+            [3,3,3,1,0,1,3,3,3,3,3,3,3,1,0,1,3,3,3],
+            [1,1,1,1,0,1,3,1,1,3,1,1,3,1,0,1,1,1,1],
+            [3,3,3,3,0,3,3,1,3,3,3,1,3,3,0,3,3,3,3],
+            [1,1,1,1,0,1,3,1,1,1,1,1,3,1,0,1,1,1,1],
+            [3,3,3,1,0,1,3,3,3,3,3,3,3,1,0,1,3,3,3],
+            [1,1,1,1,0,1,3,1,1,1,1,1,3,1,0,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,2,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,2,1],
+            [1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let board = [];
+        let score = 0;
+        let hp = 3;
+        let powerTimer = 0;
+        const POWER_DURATION = 360; // 6 Segundos (60 FPS)
+        const RESPAWN_DELAY_FRAMES = 420; // 7 Segundos (60 FPS)
+
+        function isWalkable(gx, gy) {
+            if (gx < 0 || gx >= COLS) return true; // Túnel lateral
+            if (gy < 0 || gy >= ROWS) return false;
+            return board[gy][gx] !== 1;
+        }
+
+        // --- ENTIDADE DO HERÓI (PAC-CRAWLER) ---
+        const hero = {
+            gridX: 9,
+            gridY: 15,
+            x: 9 * TILE_SIZE + TILE_SIZE / 2,
+            y: 15 * TILE_SIZE + TILE_SIZE / 2,
+            dirX: 0,
+            dirY: 0,
+            nextDirX: 0,
+            nextDirY: 0,
+            speed: 2,
+            mouthAngle: 0.2,
+            mouthSpeed: 0.02
+        };
+
+        // --- INIMIGOS / MONSTROS (FANTASMAS D&D) ---
+        const MONSTER_SPECIES = [
+            { name: 'Beholder', icon: '👁️', color: '#ef4444' },
+            { name: 'Devorador de Mentes', icon: '🐙', color: '#a855f7' },
+            { name: 'Cubo Gelatinoso', icon: '🧊', color: '#22c55e' },
+            { name: 'Lorde Lich', icon: '💀', color: '#38bdf8' }
+        ];
+
+        let monsters = [];
+
+        function resetPositions() {
+            hero.gridX = 9;
+            hero.gridY = 15;
+            hero.x = 9 * TILE_SIZE + TILE_SIZE / 2;
+            hero.y = 15 * TILE_SIZE + TILE_SIZE / 2;
+            hero.dirX = 0;
+            hero.dirY = 0;
+            hero.nextDirX = 0;
+            hero.nextDirY = 0;
+
+            const spawns = [
+                { gx: 8, gy: 9 },
+                { gx: 10, gy: 9 },
+                { gx: 9, gy: 8 },
+                { gx: 9, gy: 10 }
+            ];
+
+            monsters = MONSTER_SPECIES.map((spec, i) => ({
+                ...spec,
+                gridX: spawns[i].gx,
+                gridY: spawns[i].gy,
+                x: spawns[i].gx * TILE_SIZE + TILE_SIZE / 2,
+                y: spawns[i].gy * TILE_SIZE + TILE_SIZE / 2,
+                dirX: 0,
+                dirY: -1,
+                speed: 1.25,
+                isScared: false,
+                isDead: false,
+                respawnTimer: 0
+            }));
+        }
+
+        function restartGame() {
+            initAudio();
+            board = initialBoard.map(row => [...row]);
+            score = 0;
+            hp = 3;
+            powerTimer = 0;
+            resetPositions();
+            document.getElementById('modalOverlay').classList.add('hidden');
+            logMessage("Jornada reiniciada na masmorra!");
+            updateHUD();
+        }
+
+        function logMessage(text) {
+            const gameLog = document.getElementById('gameLog');
+            if (!gameLog) return;
+            const p = document.createElement('p');
+            p.textContent = `> ${text}`;
+            gameLog.appendChild(p);
+            gameLog.scrollTop = gameLog.scrollHeight;
+        }
+
+        function updateHUD() {
+            const scoreText = document.getElementById('scoreText');
+            if (scoreText) scoreText.textContent = `${score} GP`;
+
+            const hpContainer = document.getElementById('hpContainer');
+            if (hpContainer) {
+                hpContainer.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const heart = document.createElement('span');
+                    heart.className = i < hp ? 'text-2xl text-red-500 drop-shadow' : 'text-2xl text-stone-700';
+                    heart.textContent = '♥';
+                    hpContainer.appendChild(heart);
+                }
+            }
+
+            const powerBar = document.getElementById('powerBar');
+            if (powerBar) {
+                const pct = (powerTimer / POWER_DURATION) * 100;
+                powerBar.style.width = `${pct}%`;
+            }
+        }
+
+        // --- LÓGICA DE MOVIMENTO E COLISÃO ---
+        function updateHero() {
+            const centerX = hero.gridX * TILE_SIZE + TILE_SIZE / 2;
+            const centerY = hero.gridY * TILE_SIZE + TILE_SIZE / 2;
+
+            // Verificação de alinhamento para curvas precisas no grid
+            const isAligned = Math.abs(hero.x - centerX) < hero.speed && Math.abs(hero.y - centerY) < hero.speed;
+
+            if (isAligned && (hero.nextDirX !== hero.dirX || hero.nextDirY !== hero.dirY)) {
+                const targetGx = hero.gridX + hero.nextDirX;
+                const targetGy = hero.gridY + hero.nextDirY;
+                if (isWalkable(targetGx, targetGy)) {
+                    hero.dirX = hero.nextDirX;
+                    hero.dirY = hero.nextDirY;
+                    hero.x = centerX;
+                    hero.y = centerY;
+                }
+            }
+
+            // Deslocamento do herói
+            const targetGx = hero.gridX + hero.dirX;
+            const targetGy = hero.gridY + hero.dirY;
+
+            if (isWalkable(targetGx, targetGy)) {
+                hero.x += hero.dirX * hero.speed;
+                hero.y += hero.dirY * hero.speed;
+            } else {
+                hero.x = centerX;
+                hero.y = centerY;
+            }
+
+            hero.gridX = Math.floor(hero.x / TILE_SIZE);
+            hero.gridY = Math.floor(hero.y / TILE_SIZE);
+
+            // Suporte para o Túnel Lateral
+            if (hero.x < 0) hero.x = canvas.width;
+            if (hero.x > canvas.width) hero.x = 0;
+
+            // Animação visual da boca do elmo
+            hero.mouthAngle += hero.mouthSpeed;
+            if (hero.mouthAngle > 0.4 || hero.mouthAngle < 0.05) {
+                hero.mouthSpeed = -hero.mouthSpeed;
+            }
+
+            // Coleta de tesouro/runas
+            if (hero.gridY >= 0 && hero.gridY < ROWS && hero.gridX >= 0 && hero.gridX < COLS) {
+                const tile = board[hero.gridY][hero.gridX];
+                if (tile === 0) {
+                    board[hero.gridY][hero.gridX] = 3;
+                    score += 10;
+                    playSound('coin');
+                    checkWinCondition();
+                } else if (tile === 2) {
+                    board[hero.gridY][hero.gridX] = 3;
+                    score += 50;
+                    powerTimer = POWER_DURATION;
+                    monsters.forEach(m => { if (!m.isDead) m.isScared = true; });
+                    playSound('power');
+                    logMessage("Runa ativada! Modo Ataque Crítico!");
+                    checkWinCondition();
+                }
+            }
+        }
+
+        function checkWinCondition() {
+            let dotsRemaining = 0;
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c] === 0 || board[r][c] === 2) {
+                        dotsRemaining++;
+                    }
+                }
+            }
+            if (dotsRemaining === 0) {
+                logMessage("Masmorra limpa! Você coletou todos os tesouros!");
+                endGame(true);
+            }
+        }
+
+        function updateMonsters() {
+            monsters.forEach(m => {
+                // Se o monstro estiver morto, decrementa o timer de respawn (exatamente 7 segundos)
+                if (m.isDead) {
+                    m.respawnTimer--;
+                    if (m.respawnTimer <= 0) {
+                        m.isDead = false;
+                        m.isScared = false;
+                        m.gridX = 9;
+                        m.gridY = 9;
+                        m.x = 9 * TILE_SIZE + TILE_SIZE / 2;
+                        m.y = 9 * TILE_SIZE + TILE_SIZE / 2;
+                        m.dirX = 0;
+                        m.dirY = -1;
+                        logMessage(`${m.name} renasceu das sombras!`);
+                    }
+                    return;
+                }
+
+                const centerX = m.gridX * TILE_SIZE + TILE_SIZE / 2;
+                const centerY = m.gridY * TILE_SIZE + TILE_SIZE / 2;
+                const isAligned = Math.abs(m.x - centerX) < m.speed && Math.abs(m.y - centerY) < m.speed;
+
+                if (isAligned) {
+                    m.x = centerX;
+                    m.y = centerY;
+
+                    // Escolha estrita de rotas que RESPEITAM AS PAREDES
+                    const validDirs = [
+                        { dx: 0, dy: -1 },
+                        { dx: 0, dy: 1 },
+                        { dx: -1, dy: 0 },
+                        { dx: 1, dy: 0 }
+                    ].filter(d => {
+                        if (d.dx === -m.dirX && d.dy === -m.dirY) return false;
+                        return isWalkable(m.gridX + d.dx, m.gridY + d.dy);
+                    });
+
+                    if (validDirs.length > 0) {
+                        const nextDir = validDirs[Math.floor(Math.random() * validDirs.length)];
+                        m.dirX = nextDir.dx;
+                        m.dirY = nextDir.dy;
+                    } else {
+                        m.dirX = -m.dirX;
+                        m.dirY = -m.dirY;
+                    }
+                }
+
+                const currentSpeed = m.isScared ? m.speed * 0.5 : m.speed;
+
+                if (isWalkable(m.gridX + m.dirX, m.gridY + m.dirY)) {
+                    m.x += m.dirX * currentSpeed;
+                    m.y += m.dirY * currentSpeed;
+                } else {
+                    m.x = centerX;
+                    m.y = centerY;
+                }
+
+                m.gridX = Math.floor(m.x / TILE_SIZE);
+                m.gridY = Math.floor(m.y / TILE_SIZE);
+
+                // Colisão entre o Herói e os Monstros
+                const dist = Math.hypot(m.x - hero.x, m.y - hero.y);
+                if (dist < TILE_SIZE * 0.8) {
+                    if (m.isScared) {
+                        m.isDead = true;
+                        m.isScared = false;
+                        m.respawnTimer = RESPAWN_DELAY_FRAMES; // 7 segundos (420 quadros)
+                        score += 200;
+                        playSound('eat');
+                        logMessage(`Crítico! Você derrotou o ${m.name}! (+200 GP)`);
+                    } else if (!m.isDead) {
+                        hp--;
+                        playSound('hit');
+                        logMessage(`Você recebeu dano grave de ${m.name}!`);
+                        if (hp <= 0) {
+                            endGame(false);
+                        } else {
+                            resetPositions();
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- RENDERIZAÇÃO E DESENHO ---
+        function drawMap() {
+            ctx.fillStyle = '#0c0a09';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tile = board[r][c];
+                    const x = c * TILE_SIZE;
+                    const y = r * TILE_SIZE;
+
+                    if (tile === 1) {
+                        // Paredes estilo Masmorra D&D
+                        ctx.fillStyle = '#44403c';
+                        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+                        ctx.strokeStyle = '#1c1917';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                        
+                        ctx.fillStyle = '#57534e';
+                        ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, 3);
+                    } else if (tile === 0) {
+                        // Moedas de Ouro
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (tile === 2) {
+                        // Runa de Fúria
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE / 2, y + TILE_SIZE / 2, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#fef08a';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawEntities() {
+            // Desenhar Herói Guerreiro
+            ctx.save();
+            ctx.translate(hero.x, hero.y);
+
+            let rotation = 0;
+            if (hero.dirX === 1) rotation = 0;
+            if (hero.dirX === -1) rotation = Math.PI;
+            if (hero.dirY === 1) rotation = Math.PI / 2;
+            if (hero.dirY === -1) rotation = -Math.PI / 2;
+
+            ctx.rotate(rotation);
+
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(0, 0, TILE_SIZE / 2 - 2, hero.mouthAngle * Math.PI, (2 - hero.mouthAngle) * Math.PI);
+            ctx.lineTo(0, 0);
+            ctx.fill();
+
+            // Viseira do Elmo
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-2, -TILE_SIZE / 2 + 4, 4, 4);
+
+            ctx.restore();
+
+            // Desenhar Inimigos
+            monsters.forEach(m => {
+                if (m.isDead) return;
+
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (m.isScared) {
+                    ctx.fillText('👻', m.x, m.y);
+                } else {
+                    ctx.fillText(m.icon, m.x, m.y);
+                }
+            });
+
+            // Luz de Tocha / Névoa de Guerra
+            const torch = ctx.createRadialGradient(hero.x, hero.y, 35, hero.x, hero.y, 170);
+            torch.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            torch.addColorStop(1, 'rgba(0, 0, 0, 0.78)');
+
+            ctx.fillStyle = torch;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function endGame(won) {
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const desc = document.getElementById('modalDesc');
+            const finalScore = document.getElementById('finalScore');
+
+            if (modal) modal.classList.remove('hidden');
+            if (title) title.textContent = won ? 'MASMORRA CONQUISTADA!' : 'FIM DE JOGO';
+            if (desc) desc.textContent = won ? 'Você superou todos os monstros!' : 'Sua alma foi ceifada nas profundezas da masmorra!';
+            if (finalScore) finalScore.textContent = `${score} GP`;
+        }
+
+        // Loop Principal
+        function gameLoop() {
+            if (powerTimer > 0) {
+                powerTimer--;
+                if (powerTimer === 0) {
+                    monsters.forEach(m => m.isScared = false);
+                }
+            }
+
+            updateHero();
+            updateMonsters();
+            updateHUD();
+
+            drawMap();
+            drawEntities();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Eventos de Teclado
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(e.code)) {
+                e.preventDefault();
+            }
+            switch (e.code) {
+                case 'ArrowUp': case 'KeyW':
+                    hero.nextDirX = 0; hero.nextDirY = -1; break;
+                case 'ArrowDown': case 'KeyS':
+                    hero.nextDirX = 0; hero.nextDirY = 1; break;
+                case 'ArrowLeft': case 'KeyA':
+                    hero.nextDirX = -1; hero.nextDirY = 0; break;
+                case 'ArrowRight': case 'KeyD':
+                    hero.nextDirX = 1; hero.nextDirY = 0; break;
+            }
+        });
+
+        function setupTouchButtons() {
+            const bindBtn = (id, dx, dy) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const handler = (e) => {
+                    e.preventDefault();
+                    initAudio();
+                    hero.nextDirX = dx;
+                    hero.nextDirY = dy;
+                };
+                btn.ontouchstart = handler;
+                btn.onclick = handler;
+            };
+
+            bindBtn('btnUp', 0, -1);
+            bindBtn('btnDown', 0, 1);
+            bindBtn('btnLeft', -1, 0);
+            bindBtn('btnRight', 1, 0);
+        }
+
+        // Inicializador
+        window.onload = function() {
+            restartGame();
+            setupTouchButtons();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
