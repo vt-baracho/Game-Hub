@@ -1,4 +1,4 @@
-cat > README.md <<'EOF'
+
 # 🎮 Game Hub
 
 <p align="center">
