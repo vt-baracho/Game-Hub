@@ -1,52 +1,51 @@
-
 const games = [
     {
         title: "Caos no Avião",
         description: "Uma experiência de jogo ambientada em um cenário de caos aéreo.",
         category: "Action",
-        url: "../Game-Hub/Caos no avião/CAOS NO AVIÃO.html"
+        url: "../Caos no avião/CAOS NO AVIÃO.html" // Verifique se os espaços desta pasta também estão com %20 se der erro
     },
     {
         title: "Dungeons & Pacmans",
         description: "Uma aventura que mistura exploração de masmorras e elementos de Pac-Man.",
         category: "Adventure",
-        url: "../Game-Hub/Dungeons-and-pacmans/dungeons_dots_the_pac_crawler.html"
+        url: "../Dungeons-and-pacmans/dungeons_dots_the_pac_crawler.html"
     },
     {
         title: "Web May Cry",
         description: "Uma experiência inspirada em jogos de ação e combate.",
         category: "Action",
-        url: "../Game-Hub/DVC/Web_May_Cry_v3.html"
+        url: "../DVC/Web_May_Cry_v3.html"
     },
     {
         title: "Funk",
         description: "Um jogo de ritmo inspirado em experiências musicais.",
         category: "Rhythm",
-        url: "../Game-Hub/FNF/funk.html"
+        url: "../FNF/funk.html"
     },
     {
         title: "Futebol 2D",
         description: "Uma experiência de futebol em duas dimensões.",
         category: "Sports",
-        url: "../Game-Hub/Futebol2D/fut2d.html"
+        url: "../Futebol2D/fut2d.html"
     },
     {
         title: "Speedrunners",
         description: "Uma experiência de corrida e velocidade.",
         category: "Racing",
-        url: "../Game-Hub/Speedrunners/CORREDORES.html"
+        url: "../Speedruners/CORREDORES.html"
     },
     {
         title: "Space Invaders 3.0",
         description: "Uma aventura espacial com desafios e combates contra inimigos.",
         category: "Shooter",
-        url: "../Game-Hub/Space-invaders/space-invaders-3_0-dist-atualizado.html"
+        url: "../Space-invaders/space-invaders-3_0-dist-atualizado.html"
     },
     {
-        title: "Devorador de Deuses",
-        description: "Enfrente um poderoso chefe em uma batalha de múltiplas fases.",
-        category: "Boss Battle",
-        url: "../Game-Hub/Space-invaders/boss5 (2).html"
+        title: "Hyper Hedgehog",
+        description: "Entre numa versão fã, de um dos clássicos dos videogames",
+        category: "Platform",
+        url: "../hyper%20Hedgehog/Hyper%20Hedgehog.html" // CORRIGIDO AQUI: %20 substitui os espaços
     }
 ];
 
