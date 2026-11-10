@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hyper Hedgehog</title>
+  <style>
+/* ==========================================================
+   HYPER HEDGEHOG - estilo da página
+   A tela do jogo é um canvas 320x180 ampliado com pixels nítidos.
+   ========================================================== */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #05102e;          /* azul da tela inicial, sem faixas de outra cor ao redor */
+  overflow: hidden;             /* evita barras de rolagem com as setas */
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#tela {
+  /* Ocupa o máximo possível da janela mantendo a proporção 16:9 */
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: auto;
+  aspect-ratio: 16 / 9;
+  image-rendering: pixelated;   /* mantém o visual retrô pixelado */
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  background: #000;
+  outline: none;
+}
+
+/* Aviso exibido se o JavaScript estiver desligado */
+noscript {
+  color: #fff;
+  font: 16px monospace;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+  <!-- Tela lógica do jogo: 320x180 pixels (ampliada pelo CSS) -->
+  <canvas id="tela" width="320" height="180"></canvas>
+  <noscript>Ative o JavaScript para jogar Hyper Hedgehog.</noscript>
+  <script>
+/* ==========================================================
+   HYPER HEDGEHOG - Etapa 10: inimigos novos e fases mais longas
+   Loop de tempo fixo, estados, câmera, sprites por código.
+   ========================================================== */
+'use strict';
+
+// ---------- Configurações gerais ----------
+const LARGURA = 320;          // largura lógica da tela
+const ALTURA = 180;           // altura lógica da tela
+const PASSO = 1000 / 60;      // tempo fixo de cada atualização (60 FPS) em ms
+const CHAO_Y = 140;           // altura do chão (provisório, até a Etapa 4)
+let TAMANHO_FASE = 2400;      // largura da fase atual (definida ao gerar a fase)
+
+const canvas = document.getElementById('tela');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false; // mantém os pixels nítidos
+
+// ---------- Estados do jogo ----------
+const ESTADO = { TITULO: 'titulo', JOGANDO: 'jogando', PAUSADO: 'pausado', CONCLUIDA: 'concluida', MORRENDO: 'morrendo', FIM: 'fim' };
+let estado = ESTADO.TITULO;
+let quadro = 0;          // contador de quadros (usado em animações e texto piscando)
+
+// ---------- Dados da partida (HUD e tela de resultado) ----------
+const partida = { pontos: 0, aneis: 0, aneisTotal: 0, inimigos: 0, vidas: 3, nivel: 1 };
+let recorde = 0;         // melhor pontuação salva no navegador
+try { recorde = parseInt(localStorage.getItem('hh_recorde')) || 0; } catch (e) { /* sem localStorage */ }
+let novoRecorde = false; // true se a última partida bateu o recorde
+
+// ---------- Entrada de teclado ----------
+const teclas = {};       // teclas atualmente pressionadas
+const apertou = {};      // teclas apertadas neste quadro (para ações de um toque)
+
+window.addEventListener('keydown', (e) => {
+  iniciarAudio(); // navegadores só liberam o som depois de uma ação do jogador
+  // Evita que setas e F1 rolem a página ou abram a ajuda do navegador
+  if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'F1'].includes(e.key)) e.preventDefault();
+  if (!teclas[e.code]) apertou[e.code] = true; // ignora repetição automática
+  teclas[e.code] = true;
+});
+window.addEventListener('keyup', (e) => { teclas[e.code] = false; });
+
+// ---------- Áudio (sons sintetizados por código, sem arquivos) ----------
+const audio = { ctx: null, mestre: null, mudo: false };   // mudo: tecla M, salvo no navegador
+try { audio.mudo = localStorage.getItem('hh_mudo') === '1'; } catch (e) { /* sem localStorage */ }
+
+function iniciarAudio() {
+  if (!audio.ctx) {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audio.ctx = new AC();
+      audio.mestre = audio.ctx.createGain();
+      audio.mestre.gain.value = 0.5;                       // volume geral
+      audio.mestre.connect(audio.ctx.destination);
+    } catch (e) { audio.ctx = null; }                      // sem suporte: o jogo segue sem som
+  }
+  if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+}
+
+// Nota simples: frequência que desliza de f0 a f1, com volume decrescente
+function tom(f0, f1, dur, tipo = 'square', vol = 0.07, atraso = 0) {
+  if (!audio.ctx || audio.mudo) return;
+  const t0 = audio.ctx.currentTime + atraso;
+  const osc = audio.ctx.createOscillator(), g = audio.ctx.createGain();
+  osc.type = tipo;
+  osc.frequency.setValueAtTime(f0, t0);
+  if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t0 + dur);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g); g.connect(audio.mestre);
+  osc.start(t0); osc.stop(t0 + dur + 0.02);
+}
+
+// Explosão de ruído (impactos, derrapada do spindash)
+function ruido(dur, vol = 0.08, atraso = 0) {
+  if (!audio.ctx || audio.mudo) return;
+  const t0 = audio.ctx.currentTime + atraso;
+  const n = Math.floor(audio.ctx.sampleRate * dur);
+  const buf = audio.ctx.createBuffer(1, n, audio.ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = audio.ctx.createBufferSource(), g = audio.ctx.createGain();
+  src.buffer = buf;
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(g); g.connect(audio.mestre);
+  src.start(t0);
+}
+
+// Sequência de notas (arpejo)
+function melodia(notas, passo, dur, tipo = 'square', vol = 0.06) {
+  notas.forEach((f, i) => tom(f, f, dur, tipo, vol, i * passo));
+}
+
+const SONS = {
+  pulo:    () => tom(260, 560, 0.16),
+  carga:   () => tom(180 + heroi.carga * 35, 260 + heroi.carga * 50, 0.09, 'sawtooth', 0.06),
+  disparo: () => { ruido(0.18, 0.07); tom(160, 720, 0.22, 'sawtooth'); },
+  anel:    () => { tom(988, 988, 0.05, 'square', 0.06); tom(1319, 1319, 0.1, 'square', 0.06, 0.05); },
+  inimigo: () => { tom(420, 120, 0.14, 'square', 0.08); ruido(0.1, 0.05); },
+  dano:    () => { ruido(0.28, 0.1); tom(500, 90, 0.3, 'sawtooth'); },
+  morte:   () => { tom(440, 110, 0.5, 'square', 0.08); tom(330, 80, 0.5, 'square', 0.05, 0.1); },
+  vida:    () => melodia([523, 659, 784, 1047, 1319], 0.09, 0.12),
+  fase:    () => melodia([523, 659, 784, 1047, 784, 1047], 0.11, 0.16),
+  fim:     () => melodia([392, 330, 262, 196], 0.22, 0.25, 'triangle', 0.1),
+  inicio:  () => { tom(440, 880, 0.12, 'square', 0.06); tom(880, 880, 0.15, 'square', 0.06, 0.1); },
+  pausa:   () => tom(600, 300, 0.1, 'square', 0.05),
+  caixa:   () => { ruido(0.14, 0.07); tom(300, 700, 0.12, 'square', 0.07); },
+  poder:   () => melodia([659, 784, 988, 1319], 0.06, 0.1)
+};
+function som(nome) { if (SONS[nome]) SONS[nome](); }
+
+// ---------- Sprites por matriz de pixels ----------
+// Converte uma matriz de texto em um canvas pequeno (sprite pronto para desenhar)
+function criarSprite(linhas, paleta) {
+  const c = document.createElement('canvas');
+  c.width = linhas[0].length;
+  c.height = linhas.length;
+  const g = c.getContext('2d');
+  linhas.forEach((linha, y) => {
+    [...linha].forEach((ch, x) => {
+      if (paleta[ch]) { g.fillStyle = paleta[ch]; g.fillRect(x, y, 1, 1); }
+    });
+  });
+  return c;
+}
+
+// Ouriço azul original (12x12). Legenda: b=azul, d=azul escuro, w=branco, k=preto, s=pele
+const SPRITE_HEROI = criarSprite([
+  '..dd...dd...',
+  '.dbbd.dbbd..',
+  '.dbbbdbbbd..',
+  'dbbbbbbbbbd.',
+  'dbbwwbwwbbd.',
+  'dbwkwbwkwsss',
+  '.dbbbbbbssss',
+  '.dbbbbbbbss.',
+  '..dbbbbbbb..',
+  '..dbbssbbd..',
+  '..dbbssbbd..',
+  '..kkk..kkk..'
+], { b: '#2f6bff', d: '#1b3fa8', w: '#ffffff', k: '#111111', s: '#f2c79b' });
+
+// Versão espelhada (para quando o herói olha para a esquerda)
+const SPRITE_HEROI_ESQ = (() => {
+  const c = document.createElement('canvas');
+  c.width = SPRITE_HEROI.width; c.height = SPRITE_HEROI.height;
+  const g = c.getContext('2d');
+  g.translate(c.width, 0); g.scale(-1, 1);
+  g.drawImage(SPRITE_HEROI, 0, 0);
+  return c;
+})();
+
+// ---------- Câmera ----------
+const camera = { x: 0 };
+function atualizarCamera(alvoX) {
+  // Suaviza o movimento e impede de sair dos limites da fase
+  const desejado = alvoX - LARGURA / 2;
+  camera.x += (desejado - camera.x) * 0.1;
+  camera.x = Math.max(0, Math.min(TAMANHO_FASE - LARGURA, camera.x));
+}
+
+// ---------- Dados da fase atual ----------
+let solidos = [];        // retângulos sólidos {x, y, w, h}: chão, plataformas, paredes
+let rampas = [];         // rampas {x, y, w, h, sobe}: sobe=1 sobe para a direita, sobe=-1 desce
+let espinhos = [];       // espinhos {x, y, w, h}: causam dano ao encostar
+let aneisFase = [];      // aneis da fase {x, y, pego} (x,y = centro)
+let aneisSoltos = [];    // aneis espalhados ao tomar dano {x, y, vx, vy, t}
+let bonusFase = 0;       // bonus de aneis da fase concluida
+let contMorte = 0;       // contagem da animacao de morte
+let inimigos = [];       // inimigos {x, y, w, h, vx, xmin, xmax, vivo, morte, anim}
+let efeitos = [];        // textos flutuantes de pontos {x, y, t, txt}
+let caixas = [];         // caixas de powerup {x, y, w, h, tipo, vivo, morte, caixa:true} (tambem ficam em 'solidos' enquanto inteiras)
+let placaX = 0;          // posição da placa de fim de fase
+const DIF_MAX = 5;       // dificuldade maxima
+let dificuldade = 0;     // 0 = inicial; sobe ou desce ao fim de cada partida e fica salva no navegador
+try { dificuldade = Math.min(Math.max(parseInt(localStorage.getItem('hh_dif')) || 0, 0), DIF_MAX); } catch (e) { /* sem localStorage */ }
+let difAntes = 0;        // dificuldade da partida que acabou (para mostrar a mudanca na tela de fim)
+let contConcluida = 0;   // contagem da tela "fase completa"
+
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1)); // inteiro aleatório entre a e b
+
+// Gera a fase juntando trechos (chunks) em sequência.
+// nivel = número da fase; dif = dificuldade (buracos maiores, mais espinhos...)
+function gerarFase(nivel, dif) {
+  const f = { solidos: [], rampas: [], espinhos: [], inimigos: [], aneis: [], caixas: [], largura: 0, placaX: 0 };
+  const chao = (x, w) => f.solidos.push({ x, y: CHAO_Y, w, h: ALTURA - CHAO_Y });
+  const espinho = (x, y) => f.espinhos.push({ x, y, w: 12, h: 6 });
+  // Aneis: fileira reta e arco (em cima de buracos, espinhos e blocos para guiar o pulo)
+  const anel = (ax, ay) => f.aneis.push({ x: ax, y: ay, pego: false });
+  const fileira = (ax, ay, n) => { for (let k = 0; k < n; k++) anel(ax + k * 12, ay); };
+  const arco = (x0, x1, ay, alt, n) => {
+    for (let k = 0; k < n; k++) {
+      const t = k / (n - 1);
+      anel(Math.round(x0 + (x1 - x0) * t), Math.round(ay - alt * Math.sin(Math.PI * t)));
+    }
+  };
+  // Caixa de powerup (14x14) em cima do chao; funciona como bloco solido ate ser quebrada
+  const caixa = (cx) => {
+    const c = { x: cx, y: CHAO_Y - 14, w: 14, h: 14, caixa: true, tipo: sortearPoder(), vivo: true, morte: 0 };
+    f.solidos.push(c); f.caixas.push(c);
+  };
+  const probCaixa = Math.max(0.3 - dif * 0.03, 0.15);   // dificuldade alta = menos caixas
+  // Inimigo que patrulha entre xmin e xmax (bordas do trecho de chão onde ele fica)
+  const chance = Math.min(0.5 + nivel * 0.05 + dif * 0.05, 0.9);
+  const vel = 0.4 + Math.min(nivel * 0.05 + dif * 0.05, 0.4);
+  // Sorteia o tipo do inimigo: quanto maior a fase (ou a dificuldade), mais tipos difíceis liberados
+  const forca = nivel + Math.floor(dif / 2);
+  const sortearTipo = () => {
+    const max = Math.min(forca - 1, TIPOS_INIMIGO.length - 1);   // fase 1 só tem o tipo 0
+    let t = rnd(0, max);
+    if (Math.random() < 0.4) t = max;                            // 40% de chance de vir o mais difícil liberado
+    return t;
+  };
+  const inimigo = (xmin, xmax) => {
+    const tipo = sortearTipo(), T = TIPOS_INIMIGO[tipo];
+    const v = vel * T.vel;
+    f.inimigos.push({
+      x: rnd(xmin, xmax - 12), y: CHAO_Y - 10, yChao: CHAO_Y - 10, vy: 0, w: 12, h: 10,
+      vx: Math.random() < 0.5 ? -v : v,
+      xmin, xmax: xmax - 12, vivo: true, morte: 0, anim: 0,
+      tipo, pts: T.pts, espinho: T.espinho, pulo: T.pulo, espera: rnd(30, 90)
+    });
+  };
+
+  let x = 0;
+  chao(0, 240); x = 240; fileira(110, CHAO_Y - 14, 4); caixa(176);                    // início plano e seguro (com uma caixa para o jogador conhecer)
+  const total = Math.min(10 + nivel * 4, 40) + dif * 2;  // quantidade de trechos (fases ficam bem mais longas a cada nível)
+  let ultimo = -1;
+
+  for (let n = 0; n < total; n++) {
+    let tipo = rnd(0, 5);
+    if (tipo === ultimo && tipo !== 0) tipo = 0;       // evita repetir o mesmo obstáculo em seguida
+    ultimo = tipo;
+
+    switch (tipo) {
+      case 0: {                                        // trecho plano
+        const w = rnd(100, 180); chao(x, w);
+        const temCaixa = Math.random() < probCaixa;
+        const fimInim = temCaixa ? x + w - 50 : x + w - 10;   // com caixa, o inimigo nao patrulha ate ela
+        if (!temCaixa && w >= 140 && (dif >= 2 || nivel >= 3) && Math.random() < chance) {   // dois inimigos, um em cada metade
+          inimigo(x + 10, x + w / 2); inimigo(x + w / 2, x + w - 10);
+        } else if (Math.random() < chance) inimigo(x + 10, fimInim);
+        if (temCaixa) caixa(x + w - 36);
+        if (Math.random() < 0.7) fileira(x + 20, CHAO_Y - 14, temCaixa ? 3 : rnd(3, 5));
+        x += w; break;
+      }
+      case 1: {                                        // buraco
+        const g = Math.min(36 + dif * 5 + nivel * 3, 72);
+        chao(x, 60); arco(x + 50, x + 70 + g, CHAO_Y - 14, 30, 5);
+        x += 60 + g; chao(x, 70); x += 70; break;
+      }
+      case 2: {                                        // fileira de espinhos no chão
+        const qtd = Math.min(1 + rnd(0, 1) + (dif >= 2 ? 1 : 0), 4);
+        const grupos = dif >= 4 ? 2 : 1;
+        const passo = 50 + qtd * 12;
+        chao(x, grupos * passo + 50);
+        for (let g = 0; g < grupos; g++) for (let k = 0; k < qtd; k++) espinho(x + 50 + g * passo + k * 12, CHAO_Y - 6);
+        arco(x + 40, x + 60 + grupos * passo, CHAO_Y - 14, 30, 5);
+        x += grupos * passo + 50; break;
+      }
+      case 3: {                                        // buraco largo atravessado por plataformas
+        chao(x, 50); x += 50;
+        f.solidos.push({ x: x + 8,  y: CHAO_Y - 24, w: 40, h: 8 });
+        f.solidos.push({ x: x + 70, y: CHAO_Y - 24 - (dif >= 2 ? 10 : 0), w: 40, h: 8 });
+        fileira(x + 18, CHAO_Y - 24 - 14, 3);
+        fileira(x + 80, CHAO_Y - 24 - (dif >= 2 ? 10 : 0) - 14, 3);
+        x += 118; chao(x, 60); x += 60; break;
+      }
+      case 4: {                                        // colina: rampa de subida, topo e rampa de descida
+        chao(x, 156);
+        f.rampas.push({ x, y: CHAO_Y - 24, w: 48, h: 24, sobe: 1 });
+        f.solidos.push({ x: x + 48, y: CHAO_Y - 24, w: 60, h: 24 });
+        f.rampas.push({ x: x + 108, y: CHAO_Y - 24, w: 48, h: 24, sobe: -1 });
+        if (dif >= 3) espinho(x + 72, CHAO_Y - 24 - 6); // espinho no topo em dificuldades altas
+        fileira(x + 60, CHAO_Y - 24 - 14, 4);
+        x += 156; break;
+      }
+      case 5: {                                        // bloco que precisa ser pulado
+        const alt = rnd(18, 28);
+        chao(x, 150);
+        f.solidos.push({ x: x + 70, y: CHAO_Y - alt, w: 16, h: alt });
+        if (Math.random() < chance * 0.6) inimigo(x + 8, x + 62);   // patrulha antes do bloco
+        arco(x + 52, x + 104, CHAO_Y - 16, alt + 14, 5);
+        if (Math.random() < probCaixa) caixa(x + 118);      // caixa depois do bloco
+        x += 150; break;
+      }
+    }
+  }
+  chao(x, 220); fileira(x + 20, CHAO_Y - 14, 5);                                        // reta final com a placa
+  f.placaX = x + 100; f.largura = x + 220;
+  f.solidos.push({ x: -16, y: 0, w: 16, h: ALTURA });  // parede invisível na esquerda
+  return f;
+}
+
+// Prepara a fase atual e posiciona o herói no início
+function iniciarFase() {
+  const f = gerarFase(partida.nivel, dificuldade);
+  solidos = f.solidos; caixas = f.caixas; rampas = f.rampas; espinhos = f.espinhos; inimigos = f.inimigos; efeitos = []; aneisFase = f.aneis; aneisSoltos = [];
+  placaX = f.placaX; TAMANHO_FASE = f.largura;
+  resetarHeroi(); camera.x = 0;
+}
+
+// Chamada ao chegar na placa
+function completarFase() {
+  estado = ESTADO.CONCLUIDA; contConcluida = 150; heroi.vx = 0; som('fase');
+  bonusFase = partida.aneis * 10; partida.pontos += bonusFase;   // bonus: 10 pontos por anel
+}
+
+// Dano: com aneis, perde todos (espalhados pelo chao); sem aneis, perde uma vida.
+// Retorna true se o dano foi aplicado (false durante a invencibilidade).
+function tomarDano(causa, fonteX) {
+  const h = heroi;
+  if (h.invenc > 0 || poder.invenc > 0 || estado !== ESTADO.JOGANDO) return false;   // invencivel (dano recente ou powerup)
+  if (partida.aneis <= 0) { morrer(causa); return true; }
+  som('dano'); espalharAneis(Math.min(partida.aneis, 20));
+  partida.aneis = 0;
+  const dir = fonteX === undefined ? (h.olhaDireita ? -1 : 1) : (h.x + h.w / 2 < fonteX ? -1 : 1);
+  h.vx = dir * 2; h.vy = -3.2; h.noChao = false; h.modo = 'normal'; h.carga = 0;
+  h.ferido = 30;     // sem controle por meio segundo
+  h.invenc = 120;    // invencivel por 2 segundos (heroi pisca)
+  return true;
+}
+
+// Perde uma vida: o heroi pula e cai da tela; depois reaparece no inicio ou termina a partida
+function morrer(causa) {
+  const h = heroi;
+  partida.vidas--; estado = ESTADO.MORRENDO; som('morte');
+  contMorte = causa === 'buraco' ? 45 : 80;
+  h.vx = 0; h.vy = causa === 'buraco' ? 0 : -5.2; h.noChao = false;
+  h.modo = 'normal'; h.carga = 0; h.ferido = 0; h.invenc = 0;
+  poder.invenc = 0; poder.veloc = 0;      // perde os powerups ao morrer
+}
+
+function atualizarMorte() {
+  const h = heroi;
+  h.vy = Math.min(h.vy + FIS.GRAV, FIS.VQUEDA); h.y += h.vy;
+  if (--contMorte > 0) return;
+  if (partida.vidas <= 0) finalizarPartida();
+  else { resetarHeroi(); camera.x = 0; heroi.invenc = 120; estado = ESTADO.JOGANDO; }
+}
+
+// ---------- Constantes de física do herói ----------
+const FIS = {
+  ACEL: 0.12,          // aceleração no chão
+  ACEL_AR: 0.09,       // aceleração no ar
+  FREIO: 0.25,         // frenagem ao inverter a direção no chão
+  ATRITO: 0.1,         // desaceleração ao soltar as setas
+  VMAX: 2.5,           // velocidade máxima andando
+  GRAV: 0.28,          // gravidade
+  VQUEDA: 7,           // velocidade máxima de queda
+  PULO: -5.4,          // impulso do pulo
+  CORTE_PULO: -2.2,    // limite de subida ao soltar Z (pulo variável)
+  ROLAR_ATRITO: 0.012, // atrito baixo enquanto rola (mantém a velocidade)
+  ROLAR_FREIO: 0.05,   // frenagem leve ao apertar a seta contrária
+  CARGA_INI: 2.5,      // carga inicial do spindash
+  CARGA_TOQUE: 1.3,    // carga somada a cada toque em Z
+  CARGA_MAX: 8,        // carga (velocidade) máxima
+  CARGA_DECAI: 0.02    // perda de carga por quadro
+};
+
+// Powerups temporarios (em quadros: 600 = 10 segundos a 60 FPS)
+const DURACAO_PODER = 600;
+const poder = { invenc: 0, veloc: 0 };
+// Fisica com os tenis de velocidade: corre mais rapido e acelera mais
+const FIS_RAPIDO = Object.assign({}, FIS, { VMAX: 4.2, ACEL: 0.2, ACEL_AR: 0.14 });
+
+// Modos do herói: 'normal', 'pulo' (bola no ar), 'carregando' (spindash parado), 'rolando'
+const heroi = { x: 40, y: 0, w: 10, h: 12, vx: 0, vy: 0, noChao: false,
+                olhaDireita: true, modo: 'normal', carga: 0, anim: 0, ferido: 0, invenc: 0 };
+
+function resetarHeroi() {
+  heroi.x = 40; heroi.y = CHAO_Y - heroi.h; heroi.vx = 0; heroi.vy = 0;
+  heroi.noChao = true; heroi.modo = 'normal'; heroi.carga = 0; heroi.anim = 0; heroi.rampaAtual = null; heroi.ferido = 0; heroi.invenc = 0;
+}
+resetarHeroi();
+
+// Retorna o primeiro sólido que se sobrepõe ao herói (ou null)
+function solidoNoHeroi() {
+  for (const sd of solidos) {
+    if (heroi.x < sd.x + sd.w && heroi.x + heroi.w > sd.x && heroi.y < sd.y + sd.h && heroi.y + heroi.h > sd.y) return sd;
+  }
+  return null;
+}
+
+// Move no eixo X; degraus pequenos são "subidos" (ex.: topo de rampa), o resto vira parede
+function moverX(dx) {
+  heroi.x += dx;
+  const sd = solidoNoHeroi();
+  if (!sd) return;
+  if (sd.caixa && (heroi.modo === 'pulo' || heroi.modo === 'rolando')) { quebrarCaixa(sd); return; }  // bola atravessa a caixa quebrando
+  const pe = heroi.y + heroi.h;
+  if (heroi.noChao && pe - sd.y > 0 && pe - sd.y <= 4 + Math.abs(dx)) {
+    const yAntes = heroi.y;
+    heroi.y = sd.y - heroi.h;
+    if (!solidoNoHeroi()) return;      // subiu o degrau com sucesso
+    heroi.y = yAntes;
+  }
+  heroi.x = dx > 0 ? sd.x - heroi.w : sd.x + sd.w; heroi.vx = 0;
+}
+
+// Move no eixo Y; detecta pouso (descendo) e batida de cabeça (subindo)
+function moverY(dy) {
+  heroi.y += dy;
+  const sd = solidoNoHeroi();
+  if (sd) {
+    if (dy > 0 && sd.caixa && (heroi.modo === 'pulo' || heroi.modo === 'rolando')) {
+      // Caiu em cima da caixa: quebra e quica (segurar Z quica mais alto)
+      quebrarCaixa(sd);
+      heroi.vy = teclas['KeyZ'] ? FIS.PULO : -3.6; heroi.modo = 'pulo'; heroi.noChao = false;
+      return;
+    }
+    if (dy > 0) {                       // pousou
+      heroi.y = sd.y - heroi.h; heroi.noChao = true;
+      if (heroi.modo === 'pulo') heroi.modo = 'normal';
+    } else {                            // bateu a cabeça
+      heroi.y = sd.y + sd.h;
+    }
+    heroi.vy = 0;
+  }
+}
+
+// Altura (y) da superfície da rampa na posição x do mundo
+function alturaRampa(r, x) {
+  const t = Math.min(Math.max((x - r.x) / r.w, 0), 1);
+  return r.sobe === 1 ? r.y + r.h - t * r.h : r.y + t * r.h;
+}
+
+// Cola o herói na superfície das rampas, aplica a inclinação e lança ao sair do topo em velocidade
+function ajustarRampas(estava) {
+  const h = heroi, cx = h.x + h.w / 2, pe = h.y + h.h;
+  let atual = null;
+  if (!(h.vy < 0)) {
+    for (const r of rampas) {
+      if (cx < r.x || cx > r.x + r.w) continue;
+      const surf = alturaRampa(r, cx), dentro = pe - surf;   // dentro > 0: pé abaixo da superfície
+      if ((estava && dentro >= -6 && dentro <= 14) || (!estava && dentro >= 0 && dentro <= 12 + h.vy)) {
+        atual = r; h.y = surf - h.h; h.vy = 0; h.noChao = true;
+        if (h.modo === 'pulo') h.modo = 'normal';
+        break;
+      }
+    }
+  }
+  if (atual) {
+    // Gravidade ao longo da inclinação: acelera na descida, desacelera na subida
+    if (Math.abs(h.vx) > 0.5) {
+      const incl = atual.sobe === 1 ? -atual.h / atual.w : atual.h / atual.w;
+      h.vx += incl * (h.modo === 'rolando' ? 0.12 : 0.06);
+    }
+  } else if (h.rampaAtual && !h.noChao && Math.abs(h.vx) >= 3 && h.rampaAtual.sobe * Math.sign(h.vx) === 1) {
+    h.vy = -Math.abs(h.vx) * h.rampaAtual.h / h.rampaAtual.w;  // lançamento ao sair do topo da rampa
+  }
+  h.rampaAtual = atual;
+}
+
+// Reduz a velocidade em direção a zero sem inverter o sinal
+function aplicarAtrito(v, atrito) {
+  return Math.abs(v) <= atrito ? 0 : v - Math.sign(v) * atrito;
+}
+
+// Lógica completa do herói (movimento, pulo, spindash e colisões)
+function atualizarHeroi() {
+  const h = heroi;
+  const ferido = h.ferido > 0;         // ferido: perde o controle por instantes
+  if (ferido) h.ferido--;
+  if (h.invenc > 0) h.invenc--;
+  if (poder.invenc > 0) poder.invenc--;
+  if (poder.veloc > 0 && --poder.veloc === 0 && h.modo === 'normal') {
+    h.vx = Math.max(-FIS.VMAX, Math.min(FIS.VMAX, h.vx));   // acabou o efeito: volta ao limite normal
+  }
+  const F = poder.veloc > 0 ? FIS_RAPIDO : FIS;             // fisica atual (normal ou rapida)
+  const entrada = ferido ? 0 : (teclas['ArrowRight'] ? 1 : 0) - (teclas['ArrowLeft'] ? 1 : 0);
+  const baixo = ferido ? false : teclas['ArrowDown'];
+  const toqueZ = ferido ? false : apertou['KeyZ'];
+  const estava = h.noChao;             // estava no chão no quadro anterior?
+
+  if (h.modo === 'carregando') {
+    // --- Spindash: parado, acumulando carga a cada toque em Z ---
+    h.vx = 0;
+    if (entrada) h.olhaDireita = entrada > 0;
+    if (toqueZ) { h.carga = Math.min(h.carga + F.CARGA_TOQUE, F.CARGA_MAX); som('carga'); }
+    h.carga = Math.max(h.carga - F.CARGA_DECAI, 0);
+    h.anim += 1.2;
+    if (!baixo) {                       // soltou a seta para baixo: dispara!
+      h.vx = (h.olhaDireita ? 1 : -1) * Math.max(h.carga, F.CARGA_INI);
+      h.modo = 'rolando'; h.carga = 0; som('disparo');
+    }
+  } else {
+    // --- Início do spindash (↓ + Z, parado no chão) ou pulo (Z) ---
+    if (toqueZ && baixo && h.noChao && Math.abs(h.vx) < 0.5 && h.modo === 'normal') {
+      h.modo = 'carregando'; h.carga = F.CARGA_INI; h.vx = 0; som('carga');
+    } else if (toqueZ && h.noChao) {
+      h.vy = F.PULO; h.noChao = false; h.modo = 'pulo'; som('pulo');
+    }
+
+    if (h.modo !== 'carregando') {
+      if (h.modo === 'rolando' && h.noChao) {
+        // Rolando no chão: quase sem atrito; seta contrária freia de leve
+        if (entrada && Math.sign(entrada) !== Math.sign(h.vx)) h.vx += entrada * F.ROLAR_FREIO;
+        h.vx = aplicarAtrito(h.vx, F.ROLAR_ATRITO);
+        h.anim += Math.abs(h.vx) * 0.15;
+        if (Math.abs(h.vx) < 0.6) h.modo = 'normal';  // parou de rolar
+      } else {
+        // Andando ou no ar (a velocidade ganha no spindash é preservada)
+        const acel = h.noChao ? F.ACEL : F.ACEL_AR;
+        if (entrada) {
+          h.olhaDireita = entrada > 0;
+          if (h.vx !== 0 && Math.sign(h.vx) !== entrada) {
+            h.vx += entrada * (h.noChao ? F.FREIO : F.ACEL_AR * 1.5); // inverter direção
+          } else {
+            const novo = h.vx + entrada * acel;
+            if (Math.abs(novo) <= F.VMAX) h.vx = novo;
+            else if (Math.abs(h.vx) < F.VMAX) h.vx = entrada * F.VMAX;
+          }
+        } else if (h.noChao) {
+          h.vx = aplicarAtrito(h.vx, F.ATRITO);
+        }
+        if (h.modo === 'pulo') h.anim += 0.35 + Math.abs(h.vx) * 0.05;
+        else if (h.noChao && h.vx !== 0) h.anim += Math.abs(h.vx) * 0.12; // ciclo de corrida
+      }
+    }
+
+    // Pulo variável: soltar Z cedo corta a subida
+    if (h.modo === 'pulo' && !teclas['KeyZ'] && h.vy < F.CORTE_PULO) h.vy = F.CORTE_PULO;
+  }
+
+  // --- Movimento e colisões ---
+  moverX(h.vx);
+  h.vy = Math.min(h.vy + F.GRAV, F.VQUEDA);
+  h.noChao = false;                    // será true de novo se pousar neste quadro
+  moverY(h.vy);
+  ajustarRampas(estava);
+
+  // Saiu do chão enquanto carregava (não deve ocorrer, mas por segurança)
+  if (!h.noChao && h.modo === 'carregando') h.modo = 'normal';
+
+  // Limites laterais da fase
+  if (h.x < 0) { h.x = 0; h.vx = 0; }
+  if (h.x > TAMANHO_FASE - h.w) { h.x = TAMANHO_FASE - h.w; h.vx = 0; }
+
+  // Caiu no buraco
+  if (h.y > ALTURA + 30) { morrer('buraco'); return; }
+
+  // Espinhos (hitbox do herói um pouco reduzida para ser justo)
+  for (const e of espinhos) {
+    if (h.x + 1 < e.x + e.w && h.x + h.w - 1 > e.x && h.y + h.h > e.y + 2 && h.y < e.y + e.h) { if (tomarDano('espinho', e.x + e.w / 2)) return; }
+  }
+
+  // Placa de fim de fase
+  if (h.x + h.w / 2 >= placaX) completarFase();
+}
+
+// ---------- Caixas de powerup ----------
+// Tipos: invenc (10 s), veloc (10 s), aneis (+10), vida (+1). Vida e mais rara.
+const TIPOS_PODER = ['invenc', 'invenc', 'invenc', 'veloc', 'veloc', 'veloc', 'aneis', 'aneis', 'aneis', 'vida'];
+function sortearPoder() { return TIPOS_PODER[rnd(0, TIPOS_PODER.length - 1)]; }
+
+// Quebra a caixa (remove o bloco solido) e ativa o powerup
+function quebrarCaixa(c) {
+  if (!c.vivo) return;
+  c.vivo = false; c.morte = 18;
+  const i = solidos.indexOf(c); if (i >= 0) solidos.splice(i, 1);
+  som('caixa');
+  const fx = (txt) => efeitos.push({ x: c.x + c.w / 2, y: c.y - 4, t: 60, txt });
+  if (c.tipo === 'invenc') { poder.invenc = DURACAO_PODER; fx('INVENCIVEL!'); som('poder'); }
+  else if (c.tipo === 'veloc') { poder.veloc = DURACAO_PODER; fx('VELOCIDADE!'); som('poder'); }
+  else if (c.tipo === 'aneis') { ganharAnel(10); fx('+10 ANEIS'); }
+  else if (c.tipo === 'vida') { partida.vidas++; som('vida'); fx('1UP'); }
+}
+
+// Pequena animacao: so a fumaca da caixa quebrada precisa de contagem
+function atualizarCaixas() {
+  for (const c of caixas) if (!c.vivo && c.morte > 0) c.morte--;
+}
+
+// ---------- Aneis ----------
+function retNoSolido(x, y, w, h) {
+  return solidos.some((sd) => x < sd.x + sd.w && x + w > sd.x && y < sd.y + sd.h && y + h > sd.y);
+}
+
+// Soma aneis; a cada 100 aneis ganha uma vida
+function ganharAnel(n) {
+  const antes = partida.aneis;
+  partida.aneis += n; partida.aneisTotal += n; som('anel');
+  if (Math.floor(partida.aneis / 100) > Math.floor(antes / 100)) {
+    partida.vidas++; som('vida');
+    efeitos.push({ x: heroi.x + 5, y: heroi.y - 6, t: 70, txt: '1UP' });
+  }
+}
+
+// Espalha n aneis quicando a partir do heroi
+function espalharAneis(n) {
+  for (let k = 0; k < n; k++) {
+    aneisSoltos.push({ x: heroi.x + heroi.w / 2, y: heroi.y + 4,
+      vx: (Math.random() * 2 - 1) * 3, vy: -(1.5 + Math.random() * 3), t: 255 });
+  }
+}
+
+function atualizarAneis() {
+  const h = heroi;
+  const toca = (ax, ay) => h.x < ax + 5 && h.x + h.w > ax - 5 && h.y < ay + 5 && h.y + h.h > ay - 5;
+  for (const r of aneisFase) {
+    if (!r.pego && toca(r.x, r.y)) { r.pego = true; ganharAnel(1); }
+  }
+  for (const a of aneisSoltos) {
+    a.t--; a.vy = Math.min(a.vy + 0.15, 5);
+    a.x += a.vx; if (retNoSolido(a.x - 4, a.y - 4, 8, 8)) { a.x -= a.vx; a.vx = -a.vx; }
+    a.y += a.vy;
+    if (retNoSolido(a.x - 4, a.y - 4, 8, 8)) {
+      a.y -= a.vy;
+      a.vy = a.vy > 0 ? -a.vy * 0.75 : 0;
+      if (Math.abs(a.vy) < 0.8) a.vy = 0;
+    }
+    if (a.t < 195 && toca(a.x, a.y)) { ganharAnel(1); a.t = 0; }   // so pode pegar depois de um tempinho
+    if (a.y > ALTURA + 40) a.t = 0;
+  }
+  aneisSoltos = aneisSoltos.filter((a) => a.t > 0);
+}
+
+// Anel dourado que gira (a largura varia com o cosseno)
+function desenharAnel(cx, cy) {
+  const w = Math.max(2, Math.round(Math.abs(Math.cos(quadro * 0.1)) * 8));
+  const x0 = Math.round(cx - w / 2), y0 = Math.round(cy - 4);
+  ctx.fillStyle = '#ffd400';
+  if (w <= 3) { ctx.fillRect(x0, y0, w, 8); return; }
+  ctx.fillRect(x0 + 1, y0, w - 2, 1); ctx.fillRect(x0 + 1, y0 + 7, w - 2, 1);   // topo e base
+  ctx.fillRect(x0, y0 + 1, 1, 6); ctx.fillRect(x0 + w - 1, y0 + 1, 1, 6);       // laterais
+  ctx.fillStyle = '#fff3a0'; ctx.fillRect(x0 + 1, y0 + 1, 1, 2);                // brilho
+}
+
+function desenharAneis() {
+  for (const r of aneisFase) {
+    if (r.pego) continue;
+    const sx = Math.round(r.x - camera.x);
+    if (sx < -8 || sx > LARGURA + 8) continue;
+    desenharAnel(sx, r.y);
+  }
+  for (const a of aneisSoltos) {
+    if (a.t < 60 && quadro % 4 < 2) continue;   // pisca antes de sumir
+    desenharAnel(Math.round(a.x - camera.x), Math.round(a.y));
+  }
+}
+
+// ---------- Inimigos ----------
+// Besouro vermelho original (12x10), dois quadros de pernas. Legenda: r=vermelho, d=escuro, w=branco, k=preto
+const PAL_INIMIGO = { r: '#e8423a', d: '#9c1f2a', w: '#ffffff', k: '#111111' };
+const CORPO_INIMIGO = [
+  '...rrrrrr...',
+  '..rrrrrrrr..',
+  '.rrrrrrrrrr.',
+  '.rwwrrrrwwr.',
+  '.rwkrrrrwkr.',
+  'rrrrrrrrrrrr',
+  'rddddddddddr',
+  '.dddddddddd.'
+];
+// Besouro com espinhos nas costas (12x10): não pode ser pisado, só derrotado rolando ou com invencibilidade
+const CORPO_ESPINHO = [
+  '.y..y..y..y.',
+  '.rryrryrryr.',
+  'rrrrrrrrrrrr',
+  '.rwwrrrrwwr.',
+  '.rwkrrrrwkr.',
+  'rrrrrrrrrrrr',
+  'rddddddddddr',
+  '.dddddddddd.'
+];
+const pernas = (corpo, pal) => [
+  criarSprite([...corpo, '..kk....kk..', '.kk......kk.'], pal),
+  criarSprite([...corpo, '...kk..kk...', '..kk....kk..'], pal)
+];
+
+// Tipos de inimigo (cada um com sua pontuação). A ordem é a ordem de dificuldade.
+//  0 vermelho: patrulha comum (100)      1 roxo: muito rápido (200)
+//  2 laranja: espinhos, só rolando (300)  3 verde: pula sem parar (500)
+const TIPOS_INIMIGO = [
+  { pts: 100, vel: 1,   espinho: false, pulo: false },
+  { pts: 200, vel: 2,   espinho: false, pulo: false },
+  { pts: 300, vel: 1.2, espinho: true,  pulo: false },
+  { pts: 500, vel: 1.3, espinho: false, pulo: true  }
+];
+// Sprites de cada tipo (dois quadros de pernas por tipo)
+const SPRITES_INIM = [
+  pernas(CORPO_INIMIGO, PAL_INIMIGO),
+  pernas(CORPO_INIMIGO, { r: '#a04be8', d: '#5a1f9c', w: '#ffffff', k: '#111111' }),
+  pernas(CORPO_ESPINHO, { r: '#e8943a', d: '#9c5a1f', w: '#ffffff', k: '#111111', y: '#d8e0e8' }),
+  pernas(CORPO_INIMIGO, { r: '#3ac86a', d: '#1f7a3e', w: '#ffffff', k: '#111111' })
+];
+
+// Derrota o inimigo: pontos, contagem e efeito de fumaça
+function derrotarInimigo(e) {
+  e.vivo = false; e.morte = 18; som('inimigo');
+  partida.pontos += e.pts; partida.inimigos++;                 // cada tipo vale uma pontuação
+  efeitos.push({ x: e.x + e.w / 2, y: e.y - 2, t: 40, txt: '+' + e.pts });
+}
+
+function atualizarInimigos() {
+  const h = heroi;
+  for (const e of inimigos) {
+    if (!e.vivo) { if (e.morte > 0) e.morte--; continue; }
+    // Patrulha: anda e inverte a direção nas bordas do trecho
+    e.x += e.vx; e.anim += 0.12;
+    if (e.x <= e.xmin) { e.x = e.xmin; e.vx = Math.abs(e.vx); }
+    if (e.x >= e.xmax) { e.x = e.xmax; e.vx = -Math.abs(e.vx); }
+    // Inimigo saltador: espera um pouco no chão e pula; a gravidade o traz de volta
+    if (e.pulo) {
+      if (e.y >= e.yChao) { e.espera--; if (e.espera <= 0) { e.vy = -3.6; e.espera = rnd(50, 110); } }
+      if (e.vy !== 0 || e.y < e.yChao) {
+        e.vy += 0.2; e.y += e.vy;
+        if (e.y >= e.yChao) { e.y = e.yChao; e.vy = 0; }
+      }
+    }
+
+    // Contato com o herói
+    if (h.x + 1 < e.x + e.w && h.x + h.w - 1 > e.x && h.y < e.y + e.h && h.y + h.h > e.y) {
+      const bola = h.modo !== 'normal' || poder.invenc > 0;  // pulo, spindash, rolando e invencibilidade machucam o inimigo
+      const pisou = h.vy > 0 && h.y + h.h <= e.y + 7;        // caindo e com os pés na parte de cima
+      // Inimigo de espinhos: pisar machuca o herói; só rolando ou invencível derrota
+      const derrota = e.espinho ? (h.modo === 'rolando' || poder.invenc > 0) : (bola || pisou);
+      if (derrota) {
+        derrotarInimigo(e);
+        if (!h.noChao && h.vy > 0) {                          // quicar no inimigo (segurar Z quica mais alto)
+          h.vy = teclas['KeyZ'] ? FIS.PULO : -3.6;
+          h.modo = 'pulo'; h.noChao = false;
+        }
+      } else {
+        if (tomarDano('inimigo', e.x + e.w / 2)) return;
+      }
+    }
+  }
+  // Textos de pontos sobem e somem
+  for (const f of efeitos) { f.t--; f.y -= 0.5; }
+  efeitos = efeitos.filter((f) => f.t > 0);
+}
+
+function desenharInimigos() {
+  for (const e of inimigos) {
+    const sx = Math.round(e.x - camera.x), sy = Math.round(e.y);
+    if (sx > LARGURA || sx + e.w < 0) continue;
+    if (e.vivo) {
+      ctx.drawImage(SPRITES_INIM[e.tipo][Math.floor(e.anim) % 2], sx, sy);
+    } else if (e.morte > 0) {
+      // Fumaça: quadradinhos que se afastam do centro
+      const r = (18 - e.morte) * 0.8 + 2;
+      ctx.fillStyle = e.morte > 9 ? '#ffffff' : '#ffd400';
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1.4], [0, 1.4]]) {
+        ctx.fillRect(Math.round(sx + 6 + dx * r - 1), Math.round(sy + 5 + dy * r - 1), 3, 3);
+      }
+    }
+  }
+}
+
+function desenharEfeitos() {
+  for (const f of efeitos) texto(f.txt, Math.round(f.x - camera.x), Math.round(f.y), 8, '#ffd400');
+}
+
+function reiniciarPartida() {
+  partida.nivel = 1; iniciarFase();
+  partida.pontos = 0; partida.aneis = 0; partida.aneisTotal = 0; partida.inimigos = 0; partida.vidas = 3;
+  poder.invenc = 0; poder.veloc = 0;
+  novoRecorde = false;
+}
+
+// ---------- Mudança de estado ----------
+function iniciarPartida() { reiniciarPartida(); estado = ESTADO.JOGANDO; som('inicio'); }
+
+// Encerra a partida: salva o recorde e mostra a tela de resultado
+function finalizarPartida() {
+  // Ajuste de dificuldade pelo desempenho: 2+ fases completas sobe; morrer na fase 1 desce
+  difAntes = dificuldade; som('fim');
+  const completas = partida.nivel - 1;
+  if (completas >= 2) dificuldade = Math.min(dificuldade + 1, DIF_MAX);
+  else if (completas === 0) dificuldade = Math.max(dificuldade - 1, 0);
+  try { localStorage.setItem('hh_dif', String(dificuldade)); } catch (e) { /* ignora */ }
+  if (partida.pontos > recorde) {
+    recorde = partida.pontos; novoRecorde = true;
+    try { localStorage.setItem('hh_recorde', String(recorde)); } catch (e) { /* ignora */ }
+  }
+  estado = ESTADO.FIM;
+}
+
+// ---------- Atualização (lógica) ----------
+function atualizar() {
+  quadro++;
+  // F1 inicia a partir do título e reinicia a partir do fim de jogo
+  if (apertou['F1'] && (estado === ESTADO.TITULO || estado === ESTADO.FIM)) iniciarPartida();
+
+  // P alterna pausa
+  if (apertou['KeyP']) {
+    if (estado === ESTADO.JOGANDO) { estado = ESTADO.PAUSADO; som('pausa'); }
+    else if (estado === ESTADO.PAUSADO) { estado = ESTADO.JOGANDO; som('pausa'); }
+  }
+
+  // M liga/desliga o som (a escolha fica salva)
+  if (apertou['KeyM']) {
+    audio.mudo = !audio.mudo;
+    try { localStorage.setItem('hh_mudo', audio.mudo ? '1' : '0'); } catch (e) { /* ignora */ }
+    som('anel');
+  }
+
+  if (estado === ESTADO.JOGANDO) {
+    atualizarHeroi();
+    if (estado === ESTADO.JOGANDO) { atualizarInimigos(); atualizarAneis(); atualizarCaixas(); }
+    atualizarCamera(heroi.x + heroi.vx * 12);  // câmera olha um pouco à frente da velocidade
+    // Tecla PROVISÓRIA para testar a tela de fim de jogo
+    if (apertou['KeyG']) finalizarPartida();
+  }
+
+  if (estado === ESTADO.MORRENDO) atualizarMorte();
+
+  if (estado === ESTADO.CONCLUIDA && --contConcluida <= 0) {
+    partida.nivel++; iniciarFase(); estado = ESTADO.JOGANDO;   // próxima fase
+  }
+
+  // Limpa as teclas de "um toque" ao final de cada atualização
+  for (const k in apertou) apertou[k] = false;
+}
+
+// ---------- Desenho ----------
+function texto(t, x, y, tam = 8, cor = '#fff', alinhar = 'center') {
+  ctx.font = `bold ${tam}px monospace`;
+  ctx.textAlign = alinhar;
+  ctx.fillStyle = '#000'; ctx.fillText(t, x + 1, y + 1); // sombra
+  ctx.fillStyle = cor; ctx.fillText(t, x, y);
+}
+
+// Placa de fim de fase: o painel gira para dar efeito
+function desenharPlaca() {
+  const sx = Math.round(placaX - camera.x);
+  if (sx < -20 || sx > LARGURA + 20) return;
+  ctx.fillStyle = '#c8c8d8'; ctx.fillRect(sx - 1, CHAO_Y - 34, 2, 34);        // poste
+  const larg = Math.max(2, Math.round(Math.abs(Math.cos(quadro * 0.08)) * 16));
+  ctx.fillStyle = '#ffd400'; ctx.fillRect(sx - larg / 2 - 1, CHAO_Y - 48, larg + 2, 16); // moldura
+  ctx.fillStyle = '#ff4a4a'; ctx.fillRect(sx - larg / 2, CHAO_Y - 47, larg, 14);         // painel
+}
+
+function desenharCenario() {
+  // Céu em faixas (efeito retro, sem degradê suave)
+  const faixas = ['#3a8bff', '#4a98ff', '#5ba5ff', '#70b3ff'];
+  faixas.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, i * 35, LARGURA, 35); });
+
+  // Camada 1 (mais distante): nuvens, parallax 0.15
+  const baseN = Math.floor(camera.x * 0.15 / 140);
+  for (let i = 0; i < 4; i++) {
+    const idx = baseN + i, cx = Math.round(idx * 140 - camera.x * 0.15);
+    const cy = 14 + (((idx * 37) % 30) + 30) % 30, w = 28 + (((idx * 13) % 12) + 12) % 12;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(cx, cy, w, 5); ctx.fillRect(cx + 5, cy - 4, w - 12, 4); ctx.fillRect(cx + 2, cy + 5, w - 4, 2);
+  }
+
+  // Camada 2: montanhas, parallax 0.3
+  ctx.fillStyle = '#2e6bb5';
+  for (let i = -1; i < 8; i++) {
+    const bx = Math.round(i * 120 - (camera.x * 0.3) % 120);
+    ctx.beginPath(); ctx.moveTo(bx, CHAO_Y); ctx.lineTo(bx + 60, CHAO_Y - 60); ctx.lineTo(bx + 120, CHAO_Y); ctx.fill();
+  }
+
+  // Camada 3 (mais próxima): colinas verdes, parallax 0.5
+  for (let sx = 0; sx < LARGURA; sx += 2) {
+    const hh = 10 + Math.floor(10 * Math.abs(Math.sin((sx + camera.x * 0.5) / 35)));
+    ctx.fillStyle = '#2f9a4a'; ctx.fillRect(sx, CHAO_Y - hh, 2, hh);
+    ctx.fillStyle = '#3fbf5a'; ctx.fillRect(sx, CHAO_Y - hh, 2, 2);
+  }
+
+  // Fundo escuro (aparece dentro dos buracos)
+  ctx.fillStyle = '#1a1230'; ctx.fillRect(0, CHAO_Y, LARGURA, ALTURA - CHAO_Y);
+
+  // Sólidos (chão, plataformas e paredes) com grama no topo
+  for (const sd of solidos) {
+    if (sd.caixa) continue;                           // caixas tem desenho proprio
+    const sx = Math.round(sd.x - camera.x);
+    if (sx > LARGURA || sx + sd.w < 0) continue;     // fora da tela
+    ctx.fillStyle = '#a8651f'; ctx.fillRect(sx, sd.y, sd.w, sd.h);
+    ctx.fillStyle = '#c27a2c';                        // listras verticais (alinhadas ao mundo)
+    for (let x = Math.ceil(sd.x / 16) * 16; x < sd.x + sd.w; x += 16) {
+      if ((x / 16) % 2 === 0) ctx.fillRect(Math.round(x - camera.x), sd.y + 4, Math.min(16, sd.x + sd.w - x), sd.h - 4);
+    }
+    ctx.fillStyle = '#3fbf3f'; ctx.fillRect(sx, sd.y, sd.w, 4);       // grama
+    ctx.fillStyle = '#2e8f2e'; ctx.fillRect(sx, sd.y + 4, sd.w, 1);   // sombra da grama
+  }
+
+  // Rampas desenhadas coluna a coluna (mantém o visual pixelado nítido)
+  for (const r of rampas) {
+    for (let i = 0; i < r.w; i++) {
+      const sx = Math.round(r.x + i - camera.x);
+      if (sx < 0 || sx >= LARGURA) continue;
+      const yy = Math.round(alturaRampa(r, r.x + i + 0.5));
+      ctx.fillStyle = '#a8651f'; ctx.fillRect(sx, yy, 1, r.y + r.h - yy);
+      ctx.fillStyle = '#3fbf3f'; ctx.fillRect(sx, yy, 1, 3);
+    }
+  }
+
+  // Espinhos: dois triângulos de 6px por bloco
+  ctx.fillStyle = '#d8d8e8';
+  for (const e of espinhos) {
+    const sx = Math.round(e.x - camera.x);
+    if (sx > LARGURA || sx + e.w < 0) continue;
+    for (let k = 0; k < 2; k++) for (let linha = 0; linha < 6; linha++) {
+      const larg = 2 + Math.floor(linha / 2) * 2;     // 2,2,4,4,6,6
+      ctx.fillRect(sx + k * 6 + 3 - larg / 2, e.y + linha, larg, 1);
+    }
+  }
+
+  desenharPlaca();
+}
+
+// Icones das caixas (8x8). Legenda: y=amarelo, c=ciano, b=azul, w=branco, k=preto, s=pele
+const PAL_ICONE = { y: '#ffd400', c: '#7fe0ff', b: '#2f6bff', w: '#ffffff', k: '#111111', s: '#f2c28a' };
+const ICONES = {
+  invenc: ['...yy...', '...yy...', 'yyyyyyyy', '.yyyyyy.', '..yyyy..', '..yyyy..', '.yy..yy.', '.y....y.'],
+  veloc:  ['.....cc.', '....cc..', '...cc...', '..cccccc', '.cccccc.', '...cc...', '..cc....', '.cc.....'],
+  aneis:  ['..yyyy..', '.yyyyyy.', 'yy....yy', 'yy....yy', 'yy....yy', 'yy....yy', '.yyyyyy.', '..yyyy..'],
+  vida:   ['b.b..b.b', 'bbbbbbbb', 'bwwbbwwb', 'bwkbbwkb', 'bbbssbbb', '.bssssb.', '..bkkb..', '...bb...']
+};
+// Monta o sprite 14x14 de cada tipo de caixa: moldura cinza, tela escura e o icone no meio
+const SPRITE_CAIXA = {};
+for (const tipo in ICONES) {
+  const c = document.createElement('canvas'); c.width = 14; c.height = 14;
+  const g = c.getContext('2d');
+  g.fillStyle = '#2a2a3a'; g.fillRect(0, 0, 14, 14);          // contorno
+  g.fillStyle = '#9a9ab0'; g.fillRect(1, 1, 12, 12);          // moldura
+  g.fillStyle = '#c8c8dc'; g.fillRect(1, 1, 12, 1); g.fillRect(1, 1, 1, 12);   // brilho
+  g.fillStyle = '#101830'; g.fillRect(2, 2, 10, 10);          // tela
+  const icone = criarSprite(ICONES[tipo], PAL_ICONE);
+  g.drawImage(icone, 3, 3);
+  SPRITE_CAIXA[tipo] = c;
+}
+
+function desenharCaixas() {
+  for (const c of caixas) {
+    const sx = Math.round(c.x - camera.x), sy = Math.round(c.y);
+    if (sx > LARGURA || sx + c.w < 0) continue;
+    if (c.vivo) {
+      ctx.drawImage(SPRITE_CAIXA[c.tipo], sx, sy);
+      if (quadro % 90 < 6) { ctx.fillStyle = '#ffffff'; ctx.fillRect(sx + 3 + (quadro % 90) * 1, sy + 1, 2, 1); }  // brilho passando
+    } else if (c.morte > 0) {
+      // Fumaca: quadradinhos que se afastam do centro (igual a dos inimigos)
+      const r = (18 - c.morte) * 0.8 + 2;
+      ctx.fillStyle = c.morte > 9 ? '#ffffff' : '#ffd400';
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1.4], [0, 1.4]]) {
+        ctx.fillRect(Math.round(sx + 7 + dx * r - 1), Math.round(sy + 7 + dy * r - 1), 3, 3);
+      }
+    }
+  }
+}
+
+// Efeitos visuais dos powerups: estrelinhas girando (invencibilidade) e riscos de vento (velocidade)
+function desenharAuras() {
+  const h = heroi;
+  const sx = Math.round(h.x - camera.x) - 1, sy = Math.round(h.y);
+  if (poder.invenc > 0) {
+    for (let k = 0; k < 4; k++) {
+      const a = quadro * 0.2 + k * Math.PI / 2;
+      ctx.fillStyle = (quadro + k) % 6 < 3 ? '#ffffff' : '#ffd400';
+      ctx.fillRect(Math.round(sx + 6 + Math.cos(a) * 10) - 1, Math.round(sy + 6 + Math.sin(a) * 10) - 1, 2, 2);
+    }
+  }
+  if (poder.veloc > 0 && Math.abs(h.vx) > 1) {
+    const dir = h.vx > 0 ? -1 : 1;                     // riscos ficam atras do heroi
+    ctx.fillStyle = 'rgba(160,225,255,0.8)';
+    for (let k = 0; k < 3; k++) {
+      const len = 6 + ((quadro + k * 3) % 4) * 3;
+      const bx = dir < 0 ? sx - len - 1 : sx + 13;
+      ctx.fillRect(bx, sy + 2 + k * 4, len, 1);
+    }
+  }
+}
+
+// Quadros da bola (enrolado): listras escuras giram para dar a sensação de rotação
+const SPRITE_BOLA = [0, 1, 2, 3].map((k) => {
+  const c = document.createElement('canvas'); c.width = 12; c.height = 12;
+  const g = c.getContext('2d');
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+    const dx = x - 5.5, dy = y - 5.5, d = Math.hypot(dx, dy);
+    if (d > 6) continue;
+    const ang = Math.atan2(dy, dx) + k * Math.PI / 8;
+    const faixa = ((ang % (Math.PI / 2)) + Math.PI / 2) % (Math.PI / 2);
+    g.fillStyle = d < 2.5 ? '#9fc0ff' : (faixa < 0.8 ? '#1b3fa8' : '#2f6bff');
+    g.fillRect(x, y, 1, 1);
+  }
+  return c;
+});
+
+function desenharHeroi() {
+  const h = heroi;
+  if (h.invenc > 0 && quadro % 4 < 2) return;   // pisca durante a invencibilidade
+  const sx = Math.round(h.x - camera.x) - 1;   // sprite (12px) é mais largo que a hitbox (10px)
+  let sy = Math.round(h.y);
+  if (h.modo === 'normal') {
+    // Em pé ou correndo: balança 1px ao correr
+    if (h.noChao && Math.abs(h.vx) > 0.3 && Math.floor(h.anim) % 2 === 1) sy -= 1;
+    ctx.drawImage(h.olhaDireita ? SPRITE_HEROI : SPRITE_HEROI_ESQ, sx, sy);
+  } else {
+    // Bola (pulo, spindash ou rolando); no spindash treme levemente
+    const tremor = h.modo === 'carregando' ? (quadro % 2) : 0;
+    const quadroBola = Math.floor(h.anim) % 4;
+    ctx.drawImage(SPRITE_BOLA[(quadroBola + 4) % 4], sx + tremor, sy);
+  }
+  // Barra de carga do spindash
+  if (h.modo === 'carregando') {
+    ctx.fillStyle = '#000'; ctx.fillRect(sx - 2, sy - 6, 16, 3);
+    ctx.fillStyle = '#ffd400'; ctx.fillRect(sx - 1, sy - 5, Math.round(14 * h.carga / FIS.CARGA_MAX), 1);
+  }
+}
+
+// Botão central usado no título e no fim de jogo
+const BOTAO = { x: 100, y: 124, w: 120, h: 22 };
+let mouseX = -1, mouseY = -1;  // posição do mouse em coordenadas lógicas
+function sobreBotao() {
+  return mouseX > BOTAO.x && mouseX < BOTAO.x + BOTAO.w && mouseY > BOTAO.y && mouseY < BOTAO.y + BOTAO.h;
+}
+function desenharBotao(rotulo, y = BOTAO.y) {
+  ctx.fillStyle = sobreBotao() ? '#ff7a7a' : '#ff4a4a';
+  ctx.fillRect(BOTAO.x, y, BOTAO.w, BOTAO.h);
+  ctx.fillStyle = '#fff'; // bordas
+  ctx.fillRect(BOTAO.x, y, BOTAO.w, 1); ctx.fillRect(BOTAO.x, y + BOTAO.h - 1, BOTAO.w, 1);
+  texto(rotulo, LARGURA / 2, y + 15, 10);
+}
+
+// Formata números com zeros à esquerda (ex.: 000120)
+const zeros = (n, d = 6) => String(n).padStart(d, '0');
+
+function desenharTitulo() {
+  ctx.fillStyle = '#0b1a4a'; ctx.fillRect(0, 0, LARGURA, ALTURA);
+  // Estrelas piscando no fundo
+  for (let k = 0; k < 20; k++) {
+    if ((quadro + k * 13) % 60 < 40) { ctx.fillStyle = '#9fc0ff'; ctx.fillRect((k * 53) % LARGURA, (k * 37) % 70, 1, 1); }
+  }
+  texto('HYPER', LARGURA / 2, 30, 22, '#ffd400');
+  texto('HEDGEHOG', LARGURA / 2, 52, 22, '#2f9bff');
+  texto('SETAS: mover      Z: pular', LARGURA / 2, 74, 8);
+  texto('BAIXO + Z: spindash (aperte Z para carregar)', LARGURA / 2, 86, 8);
+  texto('Solte BAIXO para disparar!   P: pausa   M: som', LARGURA / 2, 98, 8);
+  texto('Pule em inimigos e caixas de poder  Aneis protegem', LARGURA / 2, 110, 8);
+  desenharBotao('JOGAR');
+  if (quadro % 60 < 40) texto('ou pressione F1', LARGURA / 2, 158, 8, '#ffd400');
+  texto('Recorde: ' + zeros(recorde) + '   Desafio: ' + dificuldade, LARGURA / 2, 172, 8, '#9fc0ff');
+  ctx.drawImage(SPRITE_HEROI, 40, 124);
+  ctx.drawImage(SPRITE_HEROI_ESQ, 268, 124);
+}
+
+// HUD visível durante toda a partida
+function desenharHUD() {
+  texto('PONTOS ' + zeros(partida.pontos), 6, 12, 8, '#fff', 'left');
+  texto('ANEIS ' + String(partida.aneis).padStart(3, '0'), 6, 24, 8, '#ffd400', 'left');
+  texto('VIDAS x' + partida.vidas, LARGURA - 6, 12, 8, '#fff', 'right');
+  texto('FASE ' + partida.nivel, LARGURA / 2, 12, 8, '#7dff7d');
+  // Tempo restante dos powerups (pisca nos ultimos 2 segundos)
+  let yp = 36;
+  if (poder.invenc > 0) {
+    if (poder.invenc > 120 || quadro % 20 < 12) texto('INVENCIVEL ' + Math.ceil(poder.invenc / 60) + 's', 6, yp, 8, '#fff36b', 'left');
+    yp += 11;
+  }
+  if (poder.veloc > 0) {
+    if (poder.veloc > 120 || quadro % 20 < 12) texto('VELOCIDADE ' + Math.ceil(poder.veloc / 60) + 's', 6, yp, 8, '#7fe0ff', 'left');
+  }
+  if (audio.mudo) texto('MUDO (M)', LARGURA - 6, 24, 8, '#aaaaaa', 'right');
+}
+
+function desenharFim() {
+  ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, LARGURA, ALTURA);
+  texto('FIM DE JOGO', LARGURA / 2, 28, 18, '#ff4a4a');
+  texto('Pontuacao:  ' + zeros(partida.pontos), LARGURA / 2, 46, 9);
+  texto('Aneis:      ' + partida.aneisTotal, LARGURA / 2, 59, 9, '#ffd400');
+  texto('Inimigos:   ' + partida.inimigos, LARGURA / 2, 72, 9);
+  texto('Recorde:    ' + zeros(recorde), LARGURA / 2, 85, 9, '#9fc0ff');
+  const seta = dificuldade > difAntes ? '  SOBE!' : dificuldade < difAntes ? '  DESCE' : '';
+  texto('Desafio:    ' + difAntes + (seta ? ' > ' + dificuldade + seta : ''), LARGURA / 2, 98, 9, '#ff9a4a');
+  if (novoRecorde && quadro % 40 < 28) texto('NOVO RECORDE!', LARGURA / 2, 113, 9, '#7dff7d');
+  desenharBotao('JOGAR DE NOVO', 126);
+  if (quadro % 60 < 40) texto('ou pressione F1', LARGURA / 2, 168, 8, '#ffd400');
+}
+
+function desenhar() {
+  if (estado === ESTADO.TITULO) { desenharTitulo(); return; }
+
+  desenharCenario();
+  desenharAneis();
+  desenharCaixas();
+  desenharInimigos();
+  desenharHeroi();
+  desenharAuras();
+  desenharEfeitos();
+  desenharHUD();
+
+  if (estado === ESTADO.PAUSADO) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, LARGURA, ALTURA);
+    texto('PAUSADO', LARGURA / 2, 85, 16, '#ffd400');
+    texto('Pressione P para continuar', LARGURA / 2, 105, 8);
+  }
+  if (estado === ESTADO.CONCLUIDA) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, LARGURA, ALTURA);
+    texto('FASE ' + partida.nivel + ' COMPLETA!', LARGURA / 2, 85, 16, '#ffd400');
+    texto('Bonus de aneis: +' + bonusFase, LARGURA / 2, 103, 8, '#ffd400');
+    texto('Preparando a proxima fase...', LARGURA / 2, 117, 8);
+  }
+  if (estado === ESTADO.FIM) desenharFim();
+}
+
+// ---------- Mouse: botões Jogar / Jogar de novo ----------
+function posicaoMouse(e) {
+  const r = canvas.getBoundingClientRect();
+  mouseX = (e.clientX - r.left) * LARGURA / r.width;
+  mouseY = (e.clientY - r.top) * ALTURA / r.height;
+}
+canvas.addEventListener('mousemove', posicaoMouse);
+canvas.addEventListener('click', (e) => {
+  iniciarAudio();
+  posicaoMouse(e);
+  if (estado === ESTADO.TITULO && sobreBotao()) iniciarPartida();
+  // No fim de jogo o botão fica em y=126 (ajuste da área clicável)
+  if (estado === ESTADO.FIM && mouseX > BOTAO.x && mouseX < BOTAO.x + BOTAO.w && mouseY > 126 && mouseY < 126 + BOTAO.h) iniciarPartida();
+});
+
+// ---------- Loop principal com tempo fixo ----------
+let ultimo = performance.now();
+let acumulado = 0;
+function loop(agora) {
+  acumulado += Math.min(agora - ultimo, 250); // limita para evitar "salto" ao trocar de aba
+  ultimo = agora;
+  while (acumulado >= PASSO) { atualizar(); acumulado -= PASSO; }
+  desenhar();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
