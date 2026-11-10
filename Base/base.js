@@ -45,7 +45,7 @@ const games = [
         title: "Hyper Hedgehog",
         description: "Entre numa versão fã, de um dos clássicos dos videogames",
         category: "Platform",
-        url: "../hyper%20Hedgehog/Hyper%20Hedgehog.html" // CORRIGIDO AQUI: %20 substitui os espaços
+        url: "../hyper-hedgehog/index.html" // Mude aqui para o nome exato que você renomeou
     }
 ];
 
