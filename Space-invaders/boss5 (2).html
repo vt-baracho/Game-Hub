@@ -69,21 +69,21 @@ const Som={ctx:null,init(){if(typeof MUS!=='undefined')MUS.boot();if(!this.ctx)t
 
 // MÚSICA (YouTube IFrame API, player escondido). Precisa de internet e de abrir a página por http(s); M liga/desliga.
 const MUS = {
-    boss12: new Audio('boss5(1-2).m4a'),
-    boss3: new Audio('chefe5(fase-3).m4a'),
-    decisao: new Audio('decisao(ir-ficar).m4a'),   // tela de derrota (mesma faixa do jogo principal)
-    cur: null,
-    play(name) {
-        if (this.cur === name) return;
-        const ant = this[this.cur]; if (ant) { ant.pause(); ant.currentTime = 0; }   // pausa a música ANTERIOR
-        this.cur = name;
-        const audio = this[name];
-        audio.loop = true;
-        audio.volume = 0.4;
-        audio.play().catch(e => console.log('Erro ao tocar musica', e));
-    },
-    boot() { if (this.cur) this[this.cur].play().catch(() => {}); },   // chamado a cada tecla/clique: destrava o autoplay bloqueado pelo navegador
-    toggle() { return false; }
+boss12: new Audio('boss5(1-2).m4a'),
+boss3: new Audio('chefe5(fase-3).m4a'),
+decisao: new Audio('decisao(ir-ficar).m4a'), // tela de derrota (mesma faixa do jogo principal)
+cur: null,
+play(name) {
+if (this.cur === name) return;
+const ant = this[this.cur]; if (ant) { ant.pause(); ant.currentTime = 0; } // pausa a música ANTERIOR
+this.cur = name;
+const audio = this[name];
+audio.loop = true;
+audio.volume = 0.4;
+audio.play().catch(e => console.log('Erro ao tocar musica', e));
+},
+boot() { if (this.cur) this[this.cur].play().catch(() => {}); }, // chamado a cada tecla/clique: destrava o autoplay bloqueado pelo navegador
+toggle() { return false; }
 };
 addEventListener('keydown',e=>{if(e.code==='KeyM')MUS.toggle();});
 function musicaEstado() {
@@ -100,7 +100,7 @@ const CFG=[
  {n:'P1',nm:'Verde',cor:'#39ff14',cl:{e:'KeyA',d:'KeyD',c:'KeyW',b:'KeyS',t:'KeyG'}},
  {n:'P2',nm:'Amarelo',cor:'#ffe600',cl:{e:'ArrowLeft',d:'ArrowRight',c:'ArrowUp',b:'ArrowDown',t:'KeyL'}}];
 let estado='MENU',dupla=false,T=0,last=0,shake=0,flash=0,avisoT=0,banner={t:0,s:'',u:''},PSC=1,LAS=null,SC=1.5;   // PSC: escala dos jogadores · LAS: estado do laser · SC: escala do corpo
-let P=[],B=null,E=[],PB=[],Z=[],PT=[],HOLE=null,ROT=null,ZN=null,SW=[],PU=[],A=[],AX0=0,AY0=130,ADIR=1,diveT=0,ntot=20,FX=[],lzT=3,FL=[];   // FL: lasers finos do ataque final
+let P=[],B=null,E=[],PB=[],Z=[],PT=[],HOLE=null,ROT=null,ZN=null,SW=[],PU=[],A=[],AX0=0,AY0=130,ADIR=1,diveT=0,ntot=20,FX=[],lzT=3,FL=[],HT=[];   // HT: textos flutuantes de cura (+N)   // FL: lasers finos do ataque final
 const campanhaEntrada=(()=>{try{const raw=new URLSearchParams(location.search).get('save');const v=raw?JSON.parse(raw):null;return Array.isArray(v)?v:null;}catch(e){console.warn('Dados de campanha inválidos; iniciando com valores padrão.',e);return null;}})();
 const keys={},stars=Array.from({length:110},()=>({x:rnd(0,W),y:rnd(0,H),z:1+rnd(0,3)}));
 const vivos=()=>P.filter(p=>p.vivo),tot=()=>P.reduce((s,p)=>s+p.pts,0);
@@ -125,20 +125,22 @@ const NS=32,rad=i=>(i?Math.max(9,26-i*.56):30)*SC,spc=i=>Math.max(24,rad(i)*1.7)
 const PAL=[['#120a2e','#3d1d80','#a14dff','#f0c8ff'],['#06202e','#0f5f78','#43eaff','#d4fbff'],['#2b0810','#85182a','#ff5a40','#ffe2b0']];
 const NOMEF=['DESPERTAR','SINGULARIDADE','DEVORAÇÃO'];
 function resetCorpo(b,x,y=-100,ux=0,uy=1){let px=x,py=y;b.seg.forEach((s,i)=>{if(i){px-=ux*spc(i);py-=uy*spc(i);}s.x=s.cx=px;s.y=s.cy=py;s.a=Math.atan2(uy,ux);});}   // cadeia alinhada atrás de (x,y), contra a direção do movimento
-function novoBoss(){const hp=dupla?1200:900,b={hp,max:hp,ph:1,t:0,seg:Array.from({length:NS},()=>({x:0,y:0,cx:0,cy:0,a:0})),st:'enter',mode:'slither',atk:'',cd:1.8,at:0,q:[],len:0,hit:0,jaw:0,tr:0,dives:0,lx:400,m:0,last:'',amb:1.5,mt:0,sd:0,ex:0,sc:1.5,sct:1.5,pt:1,imune:false,dv:null,pun:0,wv:false,lz:[],hin:false,lzd:false,hold:0,fs:'',ft:0,nw:0,n:0,lw:0,la:0,fc:0,fan:0,fanT:0,ca:1.57};   // fc: ataques finais já usados · fan/fanT: leque periódico · ca: eixo do cone   // sct: escala-alvo do chefe · pt: escala-alvo das naves
+function novoBoss(){const hp=dupla?1200:900,b={hp,max:hp,ph:1,t:0,seg:Array.from({length:NS},()=>({x:0,y:0,cx:0,cy:0,a:0})),st:'enter',mode:'slither',atk:'',cd:1.8,at:0,q:[],len:0,hit:0,jaw:0,tr:0,dives:0,lx:400,m:0,last:'',amb:1.5,mt:0,sd:0,ex:0,sc:1.5,sct:1.5,pt:1,imune:false,dv:null,pun:0,wv:false,lz:[],hin:false,lzd:false,hold:0,fs:'',ft:0,nw:0,n:0,lw:0,la:0,fc:0,fan:0,fanT:0,ca:1.57,heal:false,hg:0};   // heal: escudo vampírico ativo (dano vira cura) · hg: brilho do último hit   // fc: ataques finais já usados · fan/fanT: leque periódico · ca: eixo do cone   // sct: escala-alvo do chefe · pt: escala-alvo das naves
  SC=1.5;PSC=1;LAS=ROT=ZN=null;SW=[];resetCorpo(b,400);return b;}
 const angL=(a,b,t)=>a+(((b-a+Math.PI*3)%TAU)-Math.PI)*t;
 const dAng=(a,b)=>((a-b+Math.PI)%TAU+TAU)%TAU-Math.PI;
 const bul=(x,y,vx,vy,cor,r)=>({x,y,vx,vy,cor,r});
 const zone=(x,w,tel,act,kind,dmg=true)=>Z.push({x,w,tel,act,age:0,kind,dmg});
 
-function hurt(n,p,head){const b=B;if(b.st!=='fight'||b.tr>0||b.imune)return;if(b.atk==='cone'&&!head)return;   // ataque final: só a cabeça recebe dano
+function hurt(n,p,head,kind){const b=B;if(b.st!=='fight'||b.tr>0||b.imune)return;if(b.atk==='cone'&&!head)return;
+ if(b.heal){const v=kind==='E'?(dupla?6:8):(dupla?2:3);   // ESCUDO VAMPÍRICO: 1 projétil = 3 HP (2 na dupla) · Charge = 8 HP (6 na dupla); não rende pontos
+  b.hp=Math.min(b.max,b.hp+v);b.hg=.25;const h=b.seg[0];if(HT.length<24)HT.push({x:h.x+rnd(-40,40),y:h.y-50*SC/1.5,v,l:.9});boom(h.x+rnd(-30,30),h.y+rnd(-20,20),'#5dff9a',kind==='E'?10:4,120,.4);return;}   // ataque final: só a cabeça recebe dano
  b.hp-=n;b.hit=.08;if(p)p.pts+=head?5:2;
  while(b.pun<4&&b.hp<=b.max*(1-.2*(b.pun+1))){b.pun++;dropPU(b);}   // power-up a cada 20% de vida perdida
  const lim=b.ph===1?.66:b.ph===2?.33:0;
  if(lim&&b.hp<=b.max*lim){b.hp=b.max*lim;startTrans(b);}
- else if(b.hp<=0){b.hp=0;b.st='dead';b.mt=3.6;b.ex=0;b.sd=0;E=[];FL=[];Z=[];HOLE=null;LAS=ROT=ZN=null;SW=[];b.imune=false;b.dv=null;b.lz=[];if(p)p.pts+=1250;flash=1;Som.rugido();}}
-function limpa(b){E=[];FL=[];b.fan=0;Z=[];LAS=null;ROT=null;ZN=null;SW=[];b.dv=null;b.lz=[];b.imune=false;b.q=[];b.atk='';b.dives=0;}   // apaga todo ataque/efeito/estado temporário
+ else if(b.hp<=0){b.hp=0;b.st='dead';b.mt=3.6;b.ex=0;b.sd=0;E=[];FL=[];Z=[];HOLE=null;LAS=ROT=ZN=null;SW=[];b.imune=false;b.heal=false;b.dv=null;b.lz=[];if(p)p.pts+=1250;flash=1;Som.rugido();}}
+function limpa(b){E=[];FL=[];b.fan=0;Z=[];LAS=null;ROT=null;ZN=null;SW=[];b.dv=null;b.lz=[];b.imune=false;b.heal=false;b.q=[];b.atk='';b.dives=0;}   // apaga todo ataque/efeito/estado temporário
 function startTrans(b){b.tr=4.2;limpa(b);A=[];b.wv=true;novaOnda(b.ph===1?[3,3]:[3,4,4]);b.mode='recua';   // fim da fase 1: 2 fileiras de roxos · fim da fase 2: 1 de roxos + 2 de laranjas
  HOLE=null;   // fase 1→2: chefe recua e invoca a onda; só volta quando ela for destruída
  flash=1;shake=.8;Som.rugido();Som.verme();
@@ -163,7 +165,7 @@ function ring(b){if(!HOLE)return;const p=nearest(HOLE.x),g=Math.atan2(p.y+12-HOL
   E.push(bul(HOLE.x,HOLE.y,Math.cos(a)*250,Math.sin(a)*250,'#a0f',6));}}
 function begin(b){const ph=b.ph,k0=b.n++;let n;
  if(ph===3&&b.fc<2&&b.hp<=b.max*[.2,.07][b.fc]){b.fc++;n='cone';}   // ATAQUE FINAL: com 20% e de novo com 7% de vida
- else if(ph===3)n=['dive','xplo','final','spit','vl','rot'][k0%6];   // fase 3: ciclo fixo (investidas → explosão total → buraco final → leque → lasers)
+ else if(ph===3)n=['dive','xplo','final','spit','guarda','vl','rot'][k0%7];   // fase 3: ciclo fixo (investidas → explosão total → buraco final → leque → lasers)
  else{const pool=[['spit','walls','hole','rot'],['spit','rot','dev','hole','vl','dive']][ph-1];do{n=pool[rnd(0,pool.length)|0];}while(n===b.last);}
  b.last=n;b.atk=n;b.at=0;b.q=[];b.len=0;
  const Q=(t,f)=>b.q.push({t,f}),tel=[1.15,1,.9][ph-1];
@@ -175,10 +177,11 @@ function begin(b){const ph=b.ph,k0=b.n++;let n;
  else if(n==='xplo'){b.imune=true;Q(.3,()=>zn(3,3.2,'xplo'));b.len=5.2;}
  else if(n==='dive'){b.imune=true;b.dives=ph===3?5:4;b.hold=0;b.lz=[];aim(b);}   // fase 2: 4 investidas sem laser residual · fase 3: 5 com laser   // imune do início ao fim das 5 investidas (endAtk desliga)
  else if(n==='vl'){b.imune=true;LAS={c:0,s:'move',t:0,x:ph===3?rnd(300,500):rnd(130,670),vw:ph===3?860:520,wl:[],done:false};b.mode='vl';}
+ else if(n==='guarda')startGuarda(b);
  else if(n==='cone')startCone(b);
  else if(n==='final')startFinal(b);
  else if(n==='hole'){b.mode='hole';HOLE={x:400,y:HY,r:0,s:'grow',t:0,a:0,e:0,cv:1.5,R:70};b.len=ph===2?7.5:9;Q(b.len-1.6,()=>ring(b));}}
-function endAtk(b){b.atk='';b.mode='slither';b.q=[];FL=[];b.fan=0;b.cd=[1.7,.7,.8][b.ph-1];LAS=null;ROT=null;ZN=null;SW=[];b.dv=null;b.lz=[];b.dives=0;b.imune=false;if(HOLE)HOLE.s='shrink';}
+function endAtk(b){b.atk='';b.mode='slither';b.q=[];FL=[];b.fan=0;b.cd=[1.7,.7,.8][b.ph-1];LAS=null;ROT=null;ZN=null;SW=[];b.dv=null;b.lz=[];b.dives=0;b.imune=false;b.heal=false;if(HOLE)HOLE.s='shrink';}
 
 // LASER VERTICAL (fase 2): cabeça no topo → trava x → surgem 3 paredes (abrigo, sem dano) → carrega → dispara 4× com pausa
 const WY=630;   // altura do topo das paredes (largura do feixe: LAS.vw — 520 na fase 2, 860 na fase 3)
@@ -228,6 +231,12 @@ function updSW(dt){for(const w of SW){w.r+=w.d*340*dt;if(w.d>0&&w.r>=620)w.d=-1;
   for(const w of SW)if(Math.abs(d-w.r)<16+q.h/2&&Math.abs(dAng(an,w.g))>w.gw)dano(p);}   // colisão segue raio e posição reais de cada onda
  SW=SW.filter(w=>w.r>0||w.d>0);}
 
+// ESCUDO VAMPÍRICO (fase 3): 5,4 s de carga com o escudo ativo (dano vira cura) → escudo cai → 4 leques em sequência
+const GC=5.4;
+function startGuarda(b){b.mode='guarda';b.heal=true;banner={t:2.6,s:'ESCUDO VAMPÍRICO',u:'dano vira CURA — pare de atirar!'};Som.alerta();Som.carga(GC);const Q=(t,f)=>b.q.push({t,f});
+ Q(GC,()=>{b.heal=false;flash=.35;shake=.4;boom(b.seg[0].x,b.seg[0].y,'#5dff9a',40,260,.7);Som.impacto();});   // escudo cai: o chefe volta a receber dano normal
+ for(let i=0;i<4;i++)Q(GC+.6+i*.55,()=>spit(b,SHOTS[2]));b.len=GC+.6+3*.55+.9;}
+
 // ATAQUE FINAL (fase 3, com 20% e 7% de vida): carrega → rajadas em CONE + lasers finos travados. Só a cabeça recebe dano.
 const coneAng=b=>{const h=b.seg[0],q=hb(nearest(h.x));return Math.atan2(q.y+q.h/2-h.y,q.x+q.w/2-h.x);};
 function startCone(b){b.mode='cone';b.ca=Math.PI/2;b.ft=0;const Q=(t,f)=>b.q.push({t,f});
@@ -250,7 +259,7 @@ function dropPU(b){const h=b.seg[0];PU.push({x:clamp(h.x,40,W-40)-10,y:Math.max(
 function solta(x,y){if(Math.random()>=.2)return;PU.push({x:x-10,y,w:20,h:20,k:pickPU()});}   // aliens: 20% de drop (igual ao jogo base)
 function bomba(p){const r={x:p.x+p.w/2-50,y:0,w:100,h:H};FX.push({x:r.x,w:100,t:.5});Som.boom();shake=.4;   // faixa vertical de 100px centrada na nave
  for(const a of[...A])if(hit(r,a))matar(a,p);E=E.filter(e=>!(e.x>r.x&&e.x<r.x+r.w));
- if(B&&B.st==='fight'&&B.seg.some(s=>s.y>0&&s.y<H&&cr(s.x,s.y,rad(0),r)))hurt(10,p,false);}
+ if(B&&B.st==='fight'&&B.seg.some(s=>s.y>0&&s.y<H&&cr(s.x,s.y,rad(0),r)))hurt(10,p,false,'E');}
 function pegaPU(p,k){Som.tiro();if(k==='P')p.mult=Math.min(3,p.mult+1);else if(k==='S')p.esc=12;else if(k==='V')p.vel=12;else if(k==='B')bomba(p);else if(p.arma!==k){p.arma=k;p.hold=0;p.cr=0;Som.cargaStop(p.k.n);}}   // armas ficam até levar dano
 function updPU(dt){for(const u of PU){u.y+=95*dt;for(const p of vivos())if(hit(u,hb(p))){u.y=1e4;pegaPU(p,u.k);}}PU=PU.filter(u=>u.y<H);for(const f of FX)f.t-=dt;FX=FX.filter(f=>f.t>0);}
 function drawPU(u){const col=ITEM[u.k],bob=Math.sin(T*6+u.x)*1.5;c.save();c.translate(u.x,u.y+bob);c.shadowColor=col;c.shadowBlur=14;c.fillStyle=col;
@@ -321,10 +330,10 @@ function updHole(dt){const h=HOLE;if(!h)return;h.t+=dt;
  if(h.e<=0&&emit){h.e=.1;h.a+=.3;const arms=B.ph===2?2:3;for(let i=0;i<arms;i++){const a=h.a+i*TAU/arms;E.push(bul(h.x,h.y,Math.cos(a)*215,Math.sin(a)*215,'#a0f',5));}}
  if(h.cv<=0&&emit){h.cv=2.4;for(const cx of[20,W-20]){const b0=Math.atan2(H-h.y,cx-h.x);for(let j=-1;j<=1;j++)E.push(bul(h.x,h.y,Math.cos(b0+j*.13)*255,Math.sin(b0+j*.13)*255,'#f80',6));}}}  // rajadas rumo às quinas
 
-function updBoss(b,dt){b.t+=dt;b.hit-=dt;b.jaw=Math.max(0,b.jaw-dt*1.6);const h=b.seg[0];
+function updBoss(b,dt){b.t+=dt;b.hit-=dt;b.hg=Math.max(0,b.hg-dt);b.jaw=Math.max(0,b.jaw-dt*1.6);const h=b.seg[0];
  b.sc+=(b.sct-b.sc)*(1-Math.exp(-1.3*dt));SC=b.sc;
  PSC+=Math.sign(b.pt-PSC)*Math.min(Math.abs(b.pt-PSC),dt*.127);   // escalas independentes: chefe (SC) e naves (PSC)
- if(!LAS&&!(ZN&&!ZN.fired)&&b.mode!=='cone')b.lw=Math.max(0,b.lw-dt*2);
+ if(!LAS&&!(ZN&&!ZN.fired)&&b.mode!=='cone'&&b.mode!=='guarda')b.lw=Math.max(0,b.lw-dt*2);
  if(b.st==='dead'){b.mt-=dt;b.sd-=dt;shake=.35;if(b.sd<=0&&b.ex<NS){const s=b.seg[b.ex++];boom(s.x,s.y,['#fff','#ff0','#f80',PAL[2][2]][rnd(0,4)|0],40,320,1.2);Som.boom();b.sd=.05;}
   if(b.mt<=0){B=null;fimJogo(true);}return;}
  const tri=u=>Math.abs(((u%2)+2)%2-1)*2-1;   // onda triangular = ida e volta com velocidade constante
@@ -333,6 +342,7 @@ function updBoss(b,dt){b.t+=dt;b.hit-=dt;b.jaw=Math.max(0,b.jaw-dt*1.6);const h=
  else if(b.mode==='coil'){tx=400+120*Math.cos(b.t*2.2);ty=230+70*Math.sin(b.t*2.2);}
  else if(b.mode==='recua'){tx=400;ty=-230;sp=450;}
  else if(b.mode==='final'){tx=400;ty=250;sp=500;}
+ else if(b.mode==='guarda'){tx=400+60*Math.sin(b.t*.9);ty=250;sp=520;b.la=Math.PI/2;b.lw=Math.min(1,b.lw+dt*1.8);b.jaw=Math.max(b.jaw,.7);}
  else if(b.mode==='cone'){b.ft+=dt;tx=400+190*Math.sin(b.ft*.75);ty=185;sp=420;b.ca=angL(b.ca,coneAng(b),1-Math.exp(-2.2*dt));b.la=b.ca;b.lw=Math.min(1,b.lw+dt*1.8);b.jaw=Math.max(b.jaw,.75);}
  else if(b.mode==='vl'&&LAS){tx=LAS.x;ty=120;sp=1000;}
  else if(b.mode==='aim'&&b.dv){tx=b.dv.x0;ty=b.dv.y0;sp=1500;b.m+=dt;if(b.m>=b.tel){resetCorpo(b,b.dv.x0,b.dv.y0,b.dv.ux,b.dv.uy);b.mode='lunge';b.m=0;b.hin=false;b.fd=false;b.lzd=false;Som.verme();Som.rugido();}}
@@ -362,7 +372,7 @@ function updBoss(b,dt){b.t+=dt;b.hit-=dt;b.jaw=Math.max(0,b.jaw-dt*1.6);const h=
 
 function update(dt){
  T+=dt;for(const s of stars){s.y+=s.z*20*dt;if(s.y>H){s.y=0;s.x=rnd(0,W);}}
- for(const q of PT){q.x+=q.vx*dt;q.y+=q.vy*dt;q.l-=dt;}PT=PT.filter(q=>q.l>0);
+ for(const q of PT){q.x+=q.vx*dt;q.y+=q.vy*dt;q.l-=dt;}PT=PT.filter(q=>q.l>0);for(const q of HT){q.y-=45*dt;q.l-=dt;}HT=HT.filter(q=>q.l>0);
  if(shake>0)shake-=dt;if(flash>0)flash-=dt*1.4;if(banner.t>0)banner.t-=dt;
  if(estado==='AVISO'){avisoT-=dt;if(Math.floor(T*4)%2&&Math.random()<.2)Som.alerta();if(avisoT<=0){B=novoBoss();estado='PLAY';Som.entrada();banner={t:4.6,s:'LEVIATÃ DO VAZIO',u:'O DEVORADOR DE ESTRELAS'};}return;}
  if(estado!=='PLAY'&&estado!=='VITORIA')return;
@@ -388,7 +398,7 @@ function update(dt){
   if(HOLE&&HOLE.s==='on'&&!b.ig&&Math.hypot(b.x-HOLE.x,b.y-HOLE.y)<HOLE.r+6){b.y=-100;boom(b.x,HOLE.y+HOLE.r,'#a0f',5,80,.3);continue;}   // o buraco negro engole tiros comuns
   const r={x:b.x,y:b.y,w:b.w,h:b.h};
   for(let i=0;i<NS;i++){const s=B.seg[i];if(s.y<-10||s.y>H+10)continue;
-   if(cr(s.x,s.y,rad(i),r)&&usa(b,B)){boom(b.x,b.y+40,'#fff',3,70,.2);hurt((i?.4:1)*(b.dm||1),b.o,!i);if(!b.rb&&!b.pi)break;}}}
+   if(cr(s.x,s.y,rad(i),r)&&usa(b,B)){boom(b.x,b.y+40,'#fff',3,70,.2);hurt((i?.4:1)*(b.dm||1),b.o,!i,b.big?'E':'p');if(!b.rb&&!b.pi)break;}}}
  PB=PB.filter(b=>b.y>-50&&b.y<H+20);
  // zonas (barreiras, raios e avisos)
  for(const z of Z){z.age+=dt;if(z.dmg&&z.age>=z.tel+.04&&z.age<z.tel+z.act){const rs=z.kind==='side'?sideR(z):[{x:z.x,y:100,w:z.w,h:H}];for(const p of vivos())if(rs.some(r=>hit(hb(p),r)))dano(p);}}
@@ -402,9 +412,9 @@ function iniciar(){P=CFG.slice(0,dupla?2:1).map((k,i)=>{
  const d=campanhaEntrada&&campanhaEntrada[i]&&typeof campanhaEntrada[i]==='object'?campanhaEntrada[i]:{};
  const base={k,i,x:dupla?(i?520:240):380,y:PY,px:0,py:0,w:39,h:24,cd:0,inv:2,vid:dupla?7:5,vivo:true,pts:0,mov:false,mult:0,esc:0,vel:0,arma:'',hold:0};
  const num=(v,fallback,min,max)=>Number.isFinite(Number(v))?clamp(Math.floor(Number(v)),min,max):fallback;
- return {...base,vid:Math.max(base.vid,num(d.vid,base.vid,1,99)),pts:num(d.pts,0,0,999999999),mult:num(d.mult,0,0,3),esc:Number.isFinite(Number(d.esc))?clamp(Number(d.esc),0,12):0,vel:Number.isFinite(Number(d.vel))?clamp(Number(d.vel),0,12):0,arma:['C','E','L'].includes(d.arma)?d.arma:''};
+ return {...base,vid:num(d.vid,base.vid,1,99),pts:num(d.pts,0,0,999999999),mult:num(d.mult,0,0,3),esc:Number.isFinite(Number(d.esc))?clamp(Number(d.esc),0,12):0,vel:Number.isFinite(Number(d.vel))?clamp(Number(d.vel),0,12):0,arma:['C','E','L'].includes(d.arma)?d.arma:''};
  });
- Som.cargaStopAll();B=null;A=[];FX=[];E=[];PB=[];Z=[];PT=[];HOLE=null;LAS=null;ROT=null;ZN=null;SW=[];PU=[];PSC=1;SC=1.5;shake=flash=0;estado='AVISO';avisoT=3;}
+ Som.cargaStopAll();B=null;A=[];FX=[];E=[];FL=[];HT=[];PB=[];Z=[];PT=[];HOLE=null;LAS=null;ROT=null;ZN=null;SW=[];PU=[];PSC=1;SC=1.5;shake=flash=0;estado='AVISO';avisoT=3;}
 
 /* ---------- ENTRADA ---------- */
 addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','F1','F2','F3'].includes(e.code))e.preventDefault();Som.init();keys[e.code]=true;
@@ -520,6 +530,10 @@ function drawCharge(b,q,col){const h=b.seg[0],R=(8+62*q*q)*SC/1.5,ox=h.x+Math.co
  c.fillStyle=g;c.beginPath();c.arc(ox,oy,R*2.4,0,TAU);c.fill();
  for(let i=0;i<20;i++){const f=(T*1.3+i*.137)%1,an=i*2.399+T*.8,d=R+(150*SC/1.5)*(1-f);c.fillStyle=rgba(col,.15+.7*f);c.fillRect(ox+Math.cos(an)*d-2,oy+Math.sin(an)*d-2,4,4);}   // energia sendo sugada para dentro
  c.strokeStyle=rgba(col,.5+.4*pl);c.lineWidth=2;c.beginPath();c.arc(ox,oy,R*1.35,0,TAU);c.stroke();c.restore();}
+function drawGuarda(b){const q=Math.min(1,b.at/GC),pl=.5+.5*Math.sin(T*(b.heal?8:26)),col='#5dff9a',g=Math.min(1,b.hg*4);
+ if(b.heal){c.save();for(let i=b.ex;i<NS;i++){const s=b.seg[i];if(s.y<-60||s.y>H+60)continue;const r=rad(i)*1.3+(i?0:14);   // bolha de escudo sobre o corpo todo
+  c.fillStyle=rgba(col,.09+.06*pl+.28*g);c.beginPath();c.arc(s.x,s.y,r,0,TAU);c.fill();c.strokeStyle=rgba(col,.45+.3*pl+.25*g);c.lineWidth=2;c.stroke();}c.restore();}
+ if(b.at<GC+.6)drawCharge(b,q,col);}   // esfera de carga na boca: cresce até o fim do escudo e pulsa rápido antes dos leques
 function drawConeFX(b,k){const h=b.seg[0],pl=.5+.5*Math.sin(T*12);c.save();c.fillStyle=rgba(k[2],b.ft>=1.8?.06+.04*pl:.04+.1*b.ft/1.8);c.beginPath();c.moveTo(h.x,h.y);c.arc(h.x,h.y,1200,b.ca-.6,b.ca+.6);c.closePath();c.fill();c.restore();}
 function drawConeHead(b,k){const h=b.seg[0],pl=.5+.5*Math.sin(T*12);if(b.ft<1.8)drawCharge(b,b.ft/1.8,k[2]);
  c.save();c.strokeStyle=rgba('#ffffff',.5+.4*pl);c.shadowColor=k[3];c.shadowBlur=14;c.lineWidth=3;c.setLineDash([8,6]);c.beginPath();c.arc(h.x,h.y,48*SC/1.5,T*2,T*2+TAU*.9);c.stroke();c.restore();}   // anel na cabeça = único ponto vulnerável
@@ -570,7 +584,7 @@ function hud(){
  txt('HI '+pad(Math.max(0,tot())),W/2,22,18,'#ffe600');
  if(B){const x=150,bw=500,ph=B.ph;c.fillStyle='rgba(0,0,0,.6)';c.fillRect(x-12,48,bw+24,42);c.strokeStyle='#fff';c.lineWidth=1;c.strokeRect(x,54,bw,14);c.fillStyle=PAL[ph-1][2];c.fillRect(x+2,56,(bw-4)*Math.max(0,B.hp)/B.max,10);
   c.fillStyle='#fff';for(const m of[.33,.66])c.fillRect(x+2+(bw-4)*m,52,2,18);
-  txt('LEVIATÃ DO VAZIO · FASE '+ph+' — '+NOMEF[ph-1],W/2,82,13,'#fff','center',false);if(B.imune)txt('IMUNE',W/2+245,82,13,'#ff0','center',false);}}
+  txt('LEVIATÃ DO VAZIO · FASE '+ph+' — '+NOMEF[ph-1],W/2,82,13,'#fff','center',false);if(B.imune)txt('IMUNE',W/2+245,82,13,'#ff0','center',false);if(B.heal)txt('NÃO ATIRE!',W/2+245,82,13,'#5dff9a','center',false);}}
 
 function overlay(tit,col,sub){c.fillStyle='rgba(0,0,0,.7)';c.fillRect(0,0,W,H);txt(tit,W/2,150,48,col);if(sub)txt(sub,W/2,195,22,'#4ff');
  P.forEach((p,i)=>txt(`${p.k.n} (${p.k.nm}): ${pad(p.pts)}`,W/2,270+i*38,28,p.k.cor));txt('TOTAL: '+pad(tot()),W/2,270+P.length*38+16,26,'#fff');
@@ -593,13 +607,14 @@ function draw(){
   if(B)for(const l of B.lz)drawLZ(l,k);if(ROT)drawRot(k);if(ZN)drawZN(k);drawFL(k);if(B&&B.atk==='cone')drawConeFX(B,k);if(B&&B.dv&&B.mode==='aim')drawDV(B,k);drawSW(k);if(B&&LAS)drawLaser(B,k);
   drawA();
   if(B)drawBoss(B);
-  if(B&&B.st==='fight'&&ZN&&!ZN.fired)drawCharge(B,ZN.t/ZN.tel,ZN.kind==='xplo'?'#ff8a1a':'#ff3030');if(B&&B.atk==='cone')drawConeHead(B,k);
+  if(B&&B.st==='fight'&&ZN&&!ZN.fired)drawCharge(B,ZN.t/ZN.tel,ZN.kind==='xplo'?'#ff8a1a':'#ff3030');if(B&&B.atk==='cone')drawConeHead(B,k);if(B&&B.atk==='guarda')drawGuarda(B);
   for(const b of PB)drawPB(b);
   for(const e of E)drawE(e);for(const u of PU)drawPU(u);
   for(const p of vivos())if(p.inv<=0||Math.floor(T*14)%2){const lim=ct(p),bl=p.arma==='E'&&p.hold>.25&&Math.floor(T*(p.hold>=lim?24:10))%2;nave(p.x,p.y,p.k,bl,PSC);
    if(p.arma==='E'&&p.hold>0){c.fillStyle='#fff';c.fillRect(p.x,p.y+p.h+4,Math.min(1,p.hold/lim)*p.w,3);}
    if(p.esc>0){const cx=p.x+p.w/2,cy=p.y+p.h/2,R=30*PSC+6;c.fillStyle='rgba(80,255,255,.12)';c.beginPath();c.arc(cx,cy,R,0,TAU);c.fill();c.strokeStyle='#4ff';c.shadowColor='#0ff';c.shadowBlur=12;c.lineWidth=2;c.beginPath();c.arc(cx,cy,R,T*3,T*3+4.2);c.stroke();c.shadowBlur=0;}}
   for(const q of PT){c.globalAlpha=Math.max(0,q.l/q.m);c.fillStyle=q.col;c.fillRect(q.x,q.y,q.s,q.s);}c.globalAlpha=1;
+ for(const q of HT){c.globalAlpha=clamp(q.l/.5,0,1);txt('+'+q.v,q.x,q.y,q.v>3?26:18,'#5dff9a','center',false);}c.globalAlpha=1;
   if(flash>0){c.fillStyle=`rgba(255,255,255,${Math.min(.8,flash)})`;c.fillRect(0,0,W,H);}
   hud();
   if(banner.t>0){const a=Math.min(1,banner.t*1.5);c.globalAlpha=a;txt(banner.s,W/2,390,44,k[3]);txt(banner.u,W/2,426,20,'#fff');c.globalAlpha=1;}
