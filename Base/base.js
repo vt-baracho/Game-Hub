@@ -15,7 +15,7 @@ const games = [
         title: "Web May Cry",
         description: "Uma experiência inspirada em jogos de ação e combate.",
         category: "Action",
-        url: "../DVC/Web_May_Cry_v3.html"
+        url: "../DMC/Web_May_Cry_v3.html"
     },
     {
         title: "Funk",
