@@ -43,7 +43,7 @@ button:focus-visible{outline:2px solid white;outline-offset:4px}
  <button id="s1" style="display:none">SALVAR A SI MESMO</button>
 </div>
 <div id="tc"><div id="joy"><div id="knob"></div></div><div id="fire">FOGO</div></div>
-<div id="ctl"><div class="players"><div class="card p1"><b>JOGADOR 1</b> (verde)<br>Z C mover · B atirar</div><div class="card p2"><b>JOGADOR 2</b> (amarelo)<br>← → mover · J atirar</div></div><div class="geral">P pausa · F1 jogar · F2 Solo/Dupla · Vidas iniciais: Solo 3 | Dupla 5</div><div class="itens"><span class="it" style="--c:#ff8800"><i>P</i>Cadência: −20% de recarga (até 3x)</span><span class="it" style="--c:#44ffff"><i>S</i>Escudo: absorve 1 dano (12s)</span><span class="it" style="--c:#ff44ff"><i>V</i>Velocidade maior (12s)</span><span class="it" style="--c:#ff3333"><i>B</i>Bomba: limpa 2 faixas verticais</span><span class="it" style="--c:#9999ff"><i>C</i>Roundabout: sobe, para e desce</span><span class="it" style="--c:#ffffff"><i>E</i>Charge: segure e solte (5 dano, atravessa)</span><span class="it" style="--c:#44ff44"><i>L</i>Chaser: persegue o alien mais próximo</span></div><div class="nota">Armas [C] [E] [L] são permanentes até você levar dano · [P] perde 1 nível ao levar dano · o Charge atravessa inimigos e quebra o escudo do tanque (1 de dano nele) · o escudo do tanque reflete só 2 tiros</div></div>
+<div id="ctl"><div class="players"><div class="card p1"><b>JOGADOR 1</b> (verde)<br>A D mover · G atirar</div><div class="card p2"><b>JOGADOR 2</b> (amarelo)<br>← → mover · J atirar</div></div><div class="geral">P pausa · F1 jogar · F2 Solo/Dupla · Vidas iniciais: Solo 3 | Dupla 5</div><div class="itens"><span class="it" style="--c:#ff8800"><i>"P"</i> Cadência: −20% de recarga (até 3x)</span><span class="it" style="--c:#44ffff"><i>"S"</i> Escudo: absorve 1 dano (12s)</span><span class="it" style="--c:#ff44ff"><i>"V"</i> Velocidade maior (12s)</span><span class="it" style="--c:#ff3333"><i>"B"</i> Bomba: limpa 2 faixas verticais</span><span class="it" style="--c:#9999ff"><i>"C"</i> Roundabout: sobe, para e desce</span><span class="it" style="--c:#ffffff"><i>"E"</i> Charge: segure e solte (5 dano, atravessa)</span><span class="it" style="--c:#44ff44"><i>"L"</i> Chaser: persegue o alien mais próximo</span></div><div class="nota">Armas [C] [E] [L] são permanentes até você levar dano · [P] perde 1 nível ao levar dano · o Charge atravessa inimigos e quebra o escudo do tanque (1 de dano nele) · o escudo do tanque reflete só 2 tiros</div></div>
 <script>
 const cv=document.getElementById('c'),c=cv.getContext('2d'),$=i=>document.getElementById(i),W=800,H=600;
 const rnd=(a,b)=>a+Math.random()*(b-a), pad=n=>String(n).padStart(6,'0');
@@ -137,7 +137,7 @@ const ITEM={P:'#ff8800',S:'#44ffff',V:'#ff44ff',B:'#ff3333',C:'#9999ff',E:'#ffff
 function spr(m,x,y,s,col){c.fillStyle=col;for(let r=0;r<m.length;r++)for(let q=0;q<m[r].length;q++)if(m[r][q]==='1')c.fillRect(x+q*s,y+r*s,s,s);}
 
 /* ---------- ESTADO ---------- */
-const CFG=[{n:'P1',nm:'Verde',cor:'#39ff14',e:'KeyZ',d:'KeyC',t:'KeyB'},{n:'P2',nm:'Amarelo',cor:'#ffe600',e:'ArrowLeft',d:'ArrowRight',t:'KeyJ'}];
+const CFG=[{n:'P1',nm:'Verde',cor:'#39ff14',e:'KeyA',d:'KeyD',t:'KeyG'},{n:'P2',nm:'Amarelo',cor:'#ffe600',e:'ArrowLeft',d:'ArrowRight',t:'KeyJ'}];
 let estado='MENU',dupla=false,hi=0,T=0,last=0,shake=0,sT=0,fogo=0,avisoT=0,diveT=0,lastSnd=0,lzT=3,invCtl=0,ntot=48;
 let PS=[],P=[],A=[],PB=[],E=[],PU=[],PT=[],B=[],I=[],FX=[],L={c:'',t:0,g:0};
 let fase=0,limpas=0,wave=1,escapou=0,fx=0,fy=0,dir=1,iT=0;
