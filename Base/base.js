@@ -42,6 +42,12 @@ const games = [
         url: "../Space-invaders/space-invaders-3_0-dist-atualizado.html"
     },
     {
+        title: "OLYMPIC STARS 3D",
+        description: "Uma experiência de esportes olímpicos em 3D e ao mesmo tempo 2D.",
+        category: "Sports",
+        url: "../Caos no avião/Olympic Stars 3D.html"
+    },
+    {
         title: "Hyper Hedgehog",
         description: "Acelere nessa versão fã, do primeiro clássico de um ouriço azul.",
         category: "Platform",
