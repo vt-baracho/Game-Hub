@@ -123,12 +123,7 @@ function createGameCard(game, index) {
     link.href = game.url;
     link.textContent = "Play Game →";
 
-    const guideLink = document.createElement("a");
-    guideLink.className = "play-button guide-button";
-    guideLink.href = `instructions.html?game=${encodeURIComponent(game.id)}`;
-    guideLink.textContent = "Instructions →";
-
-    content.append(category, title, description, link, guideLink);
+    content.append(category, title, description, link);
     card.append(cover, content);
 
     return card;
