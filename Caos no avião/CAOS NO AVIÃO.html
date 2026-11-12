@@ -16,6 +16,7 @@ h1{font-size:clamp(34px,6vw,64px);letter-spacing:6px;margin:0;text-shadow:0 4px 
 .pr{position:absolute;top:55%;width:100%;text-align:center;font-weight:700;text-shadow:0 0 4px #000,0 0 8px #000;padding:0 6px}
 .t{position:absolute;bottom:26px;left:0;right:0;text-align:center;font:11px monospace;text-shadow:0 0 4px #000}.k{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:10px;opacity:.8;text-shadow:0 0 4px #000}
 #al{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:4;background:#7c2d12ee;padding:8px 18px;border-radius:10px;font-weight:700;display:none;pointer-events:none;border:1px solid #fdba74;text-align:center}
+#ov button:focus,#ov input:focus{outline:3px solid #ffcb3d;outline-offset:2px;box-shadow:0 0 18px #ffcb3d88}
 </style></head><body><canvas id="c"></canvas><div id="hud"></div><div id="al"></div><div id="ov"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -24,6 +25,8 @@ const DK=[{fwd:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',use:'KeyE',exit:'KeyQ
 let S={mas:.8,mus:.5,sfx:.8,amb:.5,sens:1,rot:1,keys:JSON.parse(JSON.stringify(DK))};
 try{const s=JSON.parse(localStorage.acx);if(s&&s.keys)S=Object.assign(S,s)}catch(e){}
 const save=()=>{try{localStorage.acx=JSON.stringify(S)}catch(e){}};
+const GD=()=>({dead:.15,sens:1,smooth:.3,invX:0,invY:0,map:{use:0,exit:1,pause:9,thr:7,gear:5,brk:4}});
+S.gp=[0,1,2].map(i=>Object.assign(GD(),(S.gp&&S.gp[i])||{}));
 const kl=c=>({ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'}[c]||c.replace(/^(Key|Digit)/,''));
 const AN={fwd:'Frente / olhar p/ cima',back:'Trás / olhar p/ baixo',left:'Girar esquerda',right:'Girar direita',use:'Interagir',exit:'Sair / soltar'};
 const PC=['#38bdf8','#f472b6','#a3e635'];
@@ -138,10 +141,10 @@ const ok=(x,z)=>z<-12.8?false:z<-8.1?Math.abs(x)<1.3:z<-7.7?Math.abs(x)<.5:z<8.3
 const RC=new THREE.Raycaster();RC.far=2.8;
 function aim(p){p.cam.updateMatrixWorld(true);RC.setFromCamera({x:0,y:0},p.cam);const h=RC.intersectObjects(IT,false)[0];if(!h)return null;const it=h.object.userData.it,l=it.lab(p);return l?{it,l}:null}
 function use(p){if(state!='play')return;const t=aim(p);if(p.mode=='yoke'){if(t&&t.l!='Pilotar (manche)'&&t.l!='Sentar')t.it.act(p);else cycThr();return}if(t)t.it.act(p)}
-function updP(p,dt){const b=S.keys[p.i],k=a=>keys[b[a]]?1:0;p.in=0;p.rl=0;
+function updP(p,dt){const b=S.keys[p.i],a=gpAx[p.i]||{lx:0,ly:0,rx:0,ry:0},k=x=>keys[b[x]]?1:Math.max(0,({fwd:-a.ly,back:a.ly,left:-a.lx,right:a.lx})[x]);p.in=0;p.rl=0;
 if(p.mode=='yoke'){p.in=k('back')-k('fwd');p.rl=k('right')-k('left')}
-else{p.yaw+=(k('left')-k('right'))*1.8*S.rot*dt;
-if(p.mode=='seat')p.pit=cl(p.pit+(k('fwd')-k('back'))*1.4*S.sens*dt,-.8,.8);
+else{p.yaw+=((k('left')-k('right'))*1.8-a.rx*1.8)*S.rot*dt;
+if(p.mode=='seat')p.pit=cl(p.pit+((k('fwd')-k('back'))-a.ry)*1.4*S.sens*dt,-.8,.8);
 else{p.pit=-.28;const m=(k('fwd')-k('back'))*3*dt;if(m){const nx=p.x-Math.sin(p.yaw)*m,nz=p.z-Math.cos(p.yaw)*m;if(ok(nx,p.z))p.x=nx;if(ok(p.x,nz))p.z=nz}}}
 p.cam.position.set(p.x,p.mode=='walk'?1.65:1.25,p.z);p.cam.rotation.set(p.pit,p.yaw,0,'YXZ');p.body.position.set(p.x,p.mode=='walk'?0:-.28,p.z);p.body.rotation.y=p.yaw}
 function flight(dt){const f=F.fail,en=f.engine?.5:1,fo=F.fuel<=0;let pi=0,ri=0;PL.forEach(p=>{if(p.mode=='yoke'){pi+=p.in;ri+=p.rl}});pi=cl(pi,-1,1);ri=cl(ri,-1,1);
@@ -200,10 +203,10 @@ function hudU(){const f=F.fail,tl=f.elec?'⚡ SEM ENERGIA':`${PH()} · VEL ${f.i
 PL.forEach((p,i)=>{const h=p.h,b=S.keys[i],t=aim(p);h.n.textContent=`J${i+1} · ${ROLES[p.r].i} ${ROLES[p.r].n}`+(p.item?` · ${NEED[p.item]}`:'');h.s.style.width=SAT+'%';h.s.style.background=SAT>60?'#22c55e':SAT>30?'#f59e0b':'#ef4444';
 h.pr.textContent=t?'['+kl(b.use)+'] '+t.l:'';h.t.textContent=tl;
 h.k.textContent=p.mode=='yoke'?`${kl(b.fwd)}/${kl(b.back)} nariz · ${kl(b.left)}/${kl(b.right)} asas · ${kl(b.use)} acelerar · ${kl(b.exit)} soltar`:p.mode=='seat'?`${kl(b.fwd)}/${kl(b.back)} olhar · ${kl(b.left)}/${kl(b.right)} girar · ${kl(b.use)} usar · ${kl(b.exit)} levantar`:`${kl(b.fwd)}/${kl(b.back)} andar · ${kl(b.left)}/${kl(b.right)} girar · ${kl(b.use)} usar · ${kl(b.exit)} sair`})}
-function update(dt){ST.t+=dt;PL.forEach(p=>updP(p,dt));flight(dt);if(state!='play')return;events(dt);if((pT-=dt)<0){pT=.15;panel()}hudU();if(eng)eng.frequency.value=50+F.v*.5+F.thr*30}
+function update(dt){ST.t+=dt;PL.forEach(p=>updP(p,dt));flight(dt);if(state!='play')return;events(dt);if((pT-=dt)<0){pT=.15;panel()}hudU();gpHints();if(eng)eng.frequency.value=50+F.v*.5+F.thr*30}
 // ===== TELAS =====
-function show(h){$('ov').className='';$('ov').innerHTML=h}function hide(){$('ov').className='h'}
-function menu(){state='menu';vol();$('hud').style.display='none';$('al').style.display='none';show(`<h1>AIRPLANE <b>CHAOS</b></h1><p style="margin:0 0 14px;opacity:.85">✈ Co-op local para 3 jogadores · um teclado</p><button class=b onclick=sel()>✈ JOGAR</button><button class=b onclick=ctrl()>⌨ AJUSTAR CONTROLES</button><button class=b onclick=snd()>🔊 CONFIGURAÇÕES DE SOM</button><button class=b onclick=cam()>🎥 CONFIGURAÇÕES DE CÂMERA</button><button class=b onclick=quit()>⏻ SAIR</button>`)}
+function show(h){const o=$('ov'),ai=[...o.querySelectorAll('button')].indexOf(document.activeElement);o.className='';o.innerHTML=h;if(lastDev=='pad'||ai>=0){const e=[...o.querySelectorAll('button')],f=e[ai]&&!e[ai].disabled?e[ai]:o.querySelector('button:not(:disabled)');f&&f.focus()}}function hide(){$('ov').className='h'}
+function menu(){state='menu';vol();$('hud').style.display='none';$('al').style.display='none';show(`<h1>AIRPLANE <b>CHAOS</b></h1><p style="margin:0 0 14px;opacity:.85">✈ Co-op local para 3 jogadores · um teclado</p><button class=b onclick=sel()>✈ JOGAR</button><button class=b onclick=ctrl()>⌨ AJUSTAR CONTROLES</button><button class=b onclick=gpCfg()>🎮 CONTROLE (GAMEPAD)</button><button class=b onclick=snd()>🔊 CONFIGURAÇÕES DE SOM</button><button class=b onclick=cam()>🎥 CONFIGURAÇÕES DE CÂMERA</button><button class=b onclick=quit()>⏻ SAIR</button>`)}
 function quit(){window.close();show('<div class=card><h2>Obrigado por voar conosco! 👋</h2><p>Você já pode fechar esta aba.</p><button class=b onclick=menu()>VOLTAR</button></div>')}
 function sel(){state='sel';let h='<div class=card style="width:min(1000px,94vw)"><h2>Escolha os personagens</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">';
 for(let i=0;i<3;i++){h+=`<div><b style="color:${PC[i]}">Jogador ${i+1}</b>`;ROLES.forEach((r,j)=>{const t=pick.indexOf(j);h+=`<button class="b ro ${pick[i]==j?'on':''}" ${t>=0&&t!=i?'disabled':''} onclick="pk(${i},${j})"><span style="font-size:24px">${r.i}</span> ${r.n}<small>${r.d}</small></button>`});h+='</div>'}
@@ -211,19 +214,64 @@ h+=`</div><br><button class=b onclick=menu()>VOLTAR</button> <button class=b ${p
 function pk(i,j){pick[i]=pick[i]==j?null:j;sel()}
 function ctrl(){let h='<div class=card><h2>Controles</h2><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">';
 S.keys.forEach((k,i)=>{h+=`<div><b style="color:${PC[i]}">Jogador ${i+1}</b>`+Object.keys(AN).map(a=>`<div class=r>${AN[a]}<button class=s onclick="rebind(${i},'${a}',this)">${kl(k[a])}</button></div>`).join('')+'</div>'});
-show(h+'</div><p style="font-size:12px;opacity:.7">Clique numa tecla e aperte a nova.</p><button class=b onclick=menu()>VOLTAR</button> <button class=b onclick="S.keys=JSON.parse(JSON.stringify(DK));save();ctrl()">Restaurar padrão</button></div>')}
+show(h+'</div><p style="font-size:12px;opacity:.7">Clique numa tecla e aperte a nova.</p><button class=b onclick=gpCfg()>🎮 Gamepad</button> <button class=b onclick=menu()>VOLTAR</button> <button class=b onclick="S.keys=JSON.parse(JSON.stringify(DK));save();ctrl()">Restaurar padrão</button></div>')}
 function rebind(i,a,el){el.textContent='...';const f=e=>{e.preventDefault();e.stopPropagation();S.keys[i][a]=e.code;save();removeEventListener('keydown',f,true);ctrl()};addEventListener('keydown',f,true)}
 const sl=(k,t,a,b)=>`<div class=r>${t}<input type=range min=${a} max=${b} step=.05 value=${S[k]} oninput="S.${k}=+this.value;save();vol()"></div>`;
 function snd(){show(`<div class=card><h2>Som</h2>${sl('mas','Volume geral',0,1)}${sl('mus','Música',0,1)}${sl('sfx','Efeitos sonoros',0,1)}${sl('amb','Sons ambientes',0,1)}<br><button class=b onclick=menu()>VOLTAR</button></div>`)}
 function cam(){show(`<div class=card><h2>Câmera</h2>${sl('sens','Sensibilidade (olhar cima/baixo)',.3,2.5)}${sl('rot','Velocidade de rotação (A/D)',.3,2.5)}<br><button class=b onclick=menu()>VOLTAR</button></div>`)}
 function res(){state='play';hide()}
-addEventListener('keydown',e=>{if(e.code=='Escape'){if(state=='play'){state='pause';vol();show('<div class=card style="text-align:center"><h2>⏸ PAUSA</h2><button class=b onclick=res()>CONTINUAR</button> <button class=b onclick=menu()>MENU PRINCIPAL</button></div>')}else if(state=='pause'){res()}return}
+addEventListener('keydown',e=>{lastDev='kb';if(e.code=='Escape'){togglePause();return}
 if(state!='play')return;if(/Arrow|Backspace|Space/.test(e.code))e.preventDefault();keys[e.code]=1;if(e.repeat)return;
 PL.forEach((p,i)=>{const b=S.keys[i];if(e.code==b.use)use(p);if(e.code==b.exit&&p.mode!='walk'){p.mode='walk';p.pit=-.28}})});
 addEventListener('keyup',e=>keys[e.code]=0);addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
+// ===== GAMEPAD =====
+const GA_N={use:'Interagir / Confirmar',exit:'Sair / Soltar',pause:'Pausar',thr:'Acelerar (no manche)',gear:'Trem de pouso (no manche)',brk:'Freio (no manche)'};
+const GX=['A','B','X','Y','LB','RB','LT','RT','VIEW','MENU','L3','R3','↑','↓','←','→'],GP=['✕','○','□','△','L1','R1','L2','R2','CREATE','OPTIONS','L3','R3','↑','↓','←','→'];
+let lastDev='kb',gpPrev={},gpAx=[],gpWait=null,gpSel=0,gpNav={};
+const pads=()=>[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected);
+const gtype=g=>!g?'kb':/054c|playstation|dualshock|dualsense|wireless controller/i.test(g.id)?'ps':g.mapping=='standard'||/xbox|xinput/i.test(g.id)?'xb':'gen';
+const blab=(g,i)=>{const t=gtype(g);return t=='ps'?GP[i]||'B'+i:t=='xb'?GX[i]||'B'+i:'Botão '+(i+1)};
+function stick(c,x,y){const m=Math.hypot(x,y);if(m<c.dead)return[0,0];const s=Math.min(1,Math.min(1,(m-c.dead)/(1-c.dead))*c.sens);return[x/m*s,y/m*s]}
+function togglePause(){if(state=='play'){state='pause';vol();show('<div class=card style="text-align:center"><h2>⏸ PAUSA</h2><button class=b onclick=res()>CONTINUAR</button> <button class=b onclick=menu()>MENU PRINCIPAL</button></div>')}else if(state=='pause')res()}
+function gearT(){if(F.fail.gear){say('Trem travado! Use o PAINEL');return}if(!F.air&&F.gear){say('Só dá para recolher no ar!');return}F.gear=!F.gear;sfx('ping')}
+function navF(dx,dy){const els=[...document.querySelectorAll('#ov button:not(:disabled),#ov input')],cu=document.activeElement;if(!els.length)return;if(!els.includes(cu)){els[0].focus();return}
+if(cu.type=='range'&&dx){cu.value=+cu.value+dx*.1*(cu.max-cu.min>1?2:1);cu.dispatchEvent(new Event('input'));return}
+const r=cu.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best,bs=1e9;
+els.forEach(e=>{if(e==cu)return;const q=e.getBoundingClientRect(),ex=q.left+q.width/2-cx,ey=q.top+q.height/2-cy,al=ex*dx+ey*dy,pp=Math.abs(dx?ey:ex);if(al>4&&al+pp*2<bs){bs=al+pp*2;best=e}});best&&best.focus()}
+function gpPoll(dt){const st=state;pads().forEach((g,k)=>{const c=S.gp[Math.min(k,2)],pv=gpPrev[g.index]||(gpPrev[g.index]=[]),a=gpAx[k]||(gpAx[k]={lx:0,ly:0,rx:0,ry:0}),b=i=>g.buttons[i]&&g.buttons[i].pressed,pe=i=>b(i)&&!pv[i];
+let[lx,ly]=stick(c,g.axes[0]||0,g.axes[1]||0),[rx,ry]=stick(c,g.axes[2]||0,g.axes[3]||0);
+lx=cl(lx+(b(15)?1:0)-(b(14)?1:0),-1,1);ly=cl(ly+(b(13)?1:0)-(b(12)?1:0),-1,1);
+const f=1-c.smooth*.8,sx=c.invX?-1:1,sy=c.invY?-1:1;a.lx+=(lx*sx-a.lx)*f;a.ly+=(ly*sy-a.ly)*f;a.rx+=(rx*sx-a.rx)*f;a.ry+=(ry*sy-a.ry)*f;
+if(g.buttons.some((x,i)=>pe(i))||Math.abs(lx)+Math.abs(ly)>.6)lastDev='pad';
+if(gpWait){const i=g.buttons.findIndex((x,i)=>pe(i));if(i>=0){const m=S.gp[gpSel].map,o=Object.keys(m).find(x=>x!=gpWait&&m[x]==i);let msg='Botão atribuído!';if(o){m[o]=m[gpWait];msg='⚠ Conflito: "'+GA_N[o]+'" trocou de botão'}m[gpWait]=i;gpWait=null;save();gpCfg();$('gpm').textContent=msg}}
+else if(st=='play'){const p=PL[k];if(p){if(pe(c.map.use))use(p);if(pe(c.map.exit)&&p.mode!='walk'){p.mode='walk';p.pit=-.28}if(pe(c.map.pause))togglePause();
+if(p.mode=='yoke'){if(pe(c.map.thr))cycThr();if(pe(c.map.gear))gearT();if(pe(c.map.brk)){F.brake=!F.brake;sfx('ping')}}}}
+else{const n=gpNav[k]||(gpNav[k]={d:'',t:0});n.t-=dt;const d=ly<-.6?'u':ly>.6?'d':lx<-.6?'l':lx>.6?'r':'';
+if(d&&(d!=n.d||n.t<=0)){const w=d!=n.d;navF(d=='l'?-1:d=='r'?1:0,d=='u'?-1:d=='d'?1:0);n.t=w?.4:.15}n.d=d;
+if(pe(0)){const e=document.activeElement;if(e&&e.closest&&e.closest('#ov'))e.click();else navF(0,0)}
+if(pe(1)){const bk=[...document.querySelectorAll('#ov button')].find(x=>/VOLTAR/.test(x.textContent));if(bk)bk.click();else if(st=='pause')res()}
+if(pe(c.map.pause))togglePause()}
+g.buttons.forEach((x,i)=>pv[i]=x.pressed)});drawTest()}
+function gpHints(){if(lastDev!='pad')return;const ps=pads();PL.forEach((p,i)=>{const g=ps[i];if(!g)return;const c=S.gp[i],L=x=>blab(g,c.map[x]);p.h.k.textContent=p.mode=='yoke'?`🕹 inclinar · ${L('thr')} acelerar · ${L('gear')} trem · ${L('brk')} freio · ${L('exit')} soltar`:`🕹 andar · ◐ olhar · ${L('use')} usar · ${L('exit')} sair · ${L('pause')} pausa`;p.h.pr.textContent=p.h.pr.textContent.replace(/^\[[^\]]*\]/,'['+L('use')+']')})}
+const gsl=(k,t,a,b)=>`<div class=r>${t}<input type=range min=${a} max=${b} step=.05 value=${S.gp[gpSel][k]} oninput="S.gp[gpSel].${k}=+this.value;save()"></div>`;
+function gpCfg(){const c=S.gp[gpSel],ps=pads(),g=ps[gpSel];gpWait=null;
+show(`<div class=card style="width:min(760px,95vw)"><h2>🎮 Controles (Gamepad)</h2><div class=r>Controles conectados<b>${ps.length}</b></div><div class=r>Jogador ${gpSel+1}<b>${g?g.id.slice(0,40)+' ('+{ps:'PlayStation',xb:'Xbox',gen:'Genérico'}[gtype(g)]+')':'desconectado'}</b></div>
+<button class=b onclick="gpSel=(gpSel+1)%3;gpCfg()">Configurar jogador: ${gpSel+1} ▸</button>
+${Object.keys(GA_N).map(a=>`<div class=r>${GA_N[a]}<button class=s onclick="gpWait='${a}';this.textContent='...';$('gpm').textContent='Aperte o novo botão no controle'">${blab(g,c.map[a])}</button></div>`).join('')}
+<div id=gpm style="color:#fde047;min-height:18px;font-size:13px"></div>${gsl('dead','Zona morta',0,.6)}${gsl('sens','Sensibilidade do analógico',.3,2)}${gsl('smooth','Suavização',0,1)}
+<div class=r>Inverter eixo horizontal<input type=checkbox ${c.invX?'checked':''} onchange="S.gp[gpSel].invX=this.checked?1:0;save()"></div><div class=r>Inverter eixo vertical<input type=checkbox ${c.invY?'checked':''} onchange="S.gp[gpSel].invY=this.checked?1:0;save()"></div>
+<canvas id=gpc width=420 height=200></canvas><br><button class=b onclick=ctrl()>VOLTAR</button> <button class=b onclick="S.gp[gpSel]=GD();save();gpCfg()">Restaurar padrão</button></div>`)}
+function drawTest(){const cv=$('gpc');if(!cv)return;const g=pads()[gpSel],c=cv.getContext('2d'),d=S.gp[gpSel].dead;c.clearRect(0,0,420,200);c.font='12px sans-serif';c.fillStyle='#fff';
+if(!g){c.fillText('Nenhum controle neste jogador — aperte um botão',60,90);return}
+[[70,70,0,1],[200,70,2,3]].forEach(([x,y,i,j])=>{const u=g.axes[i]||0,v=g.axes[j]||0,m=Math.hypot(u,v);c.lineWidth=2;c.strokeStyle='#64748b';c.beginPath();c.arc(x,y,48,0,7);c.stroke();c.strokeStyle='#ef444488';c.beginPath();c.arc(x,y,d*48,0,7);c.stroke();c.fillStyle=m>d?'#22c55e':'#94a3b8';c.beginPath();c.arc(x+u*38,y+v*38,10,0,7);c.fill();c.fillStyle='#fff';c.fillText((m*100|0)+'%',x-10,y+66)});
+[6,7].forEach((i,n)=>{const bt=g.buttons[i],v=bt?bt.value:0,x=310+n*45;c.strokeStyle='#64748b';c.strokeRect(x,20,30,90);c.fillStyle='#38bdf8';c.fillRect(x,110-v*90,30,v*90);c.fillStyle='#fff';c.fillText(blab(g,i),x+4,128)});
+g.buttons.slice(0,16).forEach((bt,i)=>{const x=10+(i%8)*50,y=150+(i>>3)*26;c.fillStyle=bt.pressed?'#facc15':'#334155';c.fillRect(x,y,46,22);c.fillStyle=bt.pressed?'#000':'#fff';c.fillText(blab(g,i),x+4,y+15)})}
+addEventListener('gamepadconnected',e=>{lastDev='pad';say('🎮 Controle conectado: '+e.gamepad.id.slice(0,30));if($('gpc'))gpCfg()});
+addEventListener('gamepaddisconnected',e=>{say('🎮 Controle desconectado');if(state=='play')togglePause();if($('gpc'))setTimeout(gpCfg,50)});
+addEventListener('pointerdown',()=>lastDev='kb');
 // ===== LOOP =====
 let last=0;function loop(t){requestAnimationFrame(loop);const dt=Math.min((t-last)/1000||0,.05);last=t;const W=innerWidth,H=innerHeight;
-if(state=='play')update(dt);
+gpPoll(dt);if(state=='play')update(dt);
 if(state=='play'||state=='pause'||state=='end'){R.setScissorTest(true);const w=Math.floor(W/3);PL.forEach((p,i)=>{R.setViewport(i*w,0,w,H);R.setScissor(i*w,0,w,H);p.cam.aspect=w/H;p.cam.updateProjectionMatrix();R.render(GS,p.cam)})}
 else{R.setScissorTest(false);R.setViewport(0,0,W,H);const a=t/1000*.12;mc.aspect=W/H;mc.updateProjectionMatrix();mc.position.set(Math.cos(a)*42,9+Math.sin(a*.7)*4,Math.sin(a)*42);mc.lookAt(0,3.5,0);
 mp.userData.fans.forEach(f=>f.rotation.z+=dt*25);mp.userData.lt.forEach((l,i)=>l.visible=i<2?true:Math.floor(t/400)%2==0);R.render(MS,mc)}}
