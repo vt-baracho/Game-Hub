@@ -449,3 +449,8 @@ a {
 
     scroll-margin: 100px;
 }
+
+
+/* Link to each game's instruction guide */
+.guide-button { margin-left: 7px; background: #29213e; border: 1px solid #514078; }
+@media (max-width: 520px) { .guide-button { margin-left: 0; } }
