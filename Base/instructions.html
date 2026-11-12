@@ -1,17 +1,72 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Objetivos, controles e dicas dos jogos do Game Hub."><title>Game Hub | Instruções</title>
-<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="instructions.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></head>
-<body><header class="header"><a href="base.html" class="logo"><span class="logo-icon">G</span><span>GAME<span class="highlight">HUB</span></span></a>
-<nav class="navigation"><a href="base.html#home">Home</a><a href="base.html#games">Games</a><a href="instructions.html" class="active">Instructions</a></nav>
-<a href="base.html#games" class="header-button">Explore Games</a></header>
-<main class="guide-main"><section class="guide-hero"><span class="eyebrow">PLAYER'S GUIDE</span><h1>Know the rules.<br><span>Master the game.</span></h1>
-<p>Consulte objetivos, mecânicas, controles e dicas para aproveitar cada experiência do Game Hub.</p></section>
-<section class="guide-layout"><aside class="guide-sidebar"><div class="sidebar-heading"><span class="eyebrow">GAME LIBRARY</span><h2>Choose a game</h2></div>
-<label class="guide-search"><span>⌕</span><input id="guide-search" type="search" placeholder="Buscar jogo..." autocomplete="off"></label>
-<nav id="game-list" class="game-list" aria-label="Selecionar jogo"></nav></aside>
-<article class="guide-content" id="guide-content" aria-live="polite"><div class="guide-empty"><span class="empty-icon">⌖</span><h2>Selecione um jogo</h2><p>Escolha um título na lista para consultar seu guia.</p></div></article></section></main>
-<footer class="footer"><a href="base.html" class="logo"><span class="logo-icon">G</span><span>GAME<span class="highlight">HUB</span></span></a><p>Made by fans, for fans.</p><span>© <span id="current-year"></span> Game Hub.</span></footer>
-<script src="instructions.js"></script></body></html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Objetivos, controles e dicas dos jogos do Game Hub.">
+        <title>Game Hub | Instruções</title>
+        <link rel="stylesheet" href="base.css">
+        <link rel="stylesheet" href="instructions.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <header class="header">
+            <a href="base.html" class="logo">
+                <span class="logo-icon">G</span>
+                <span>GAME
+                    <span class="highlight">HUB</span>
+                </span>
+            </a>
+            <nav class="navigation">
+                <a href="base.html#home">Home</a>
+                <a href="base.html#games">Games</a>
+                <a href="instructions.html" class="active">Instructions</a>
+            </nav>
+            <a href="base.html#games" class="header-button">Explore Games</a>
+        </header>
+        <main class="guide-main">
+            <section class="guide-hero">
+                <span class="eyebrow">PLAYER'S GUIDE</span>
+                <h1>Know the rules.<br>
+                    <span>Master the game.</span>
+                </h1>
+                <p>Consulte objetivos, mecânicas, controles e dicas para aproveitar cada experiência do Game Hub.</p>
+            </section>
+            <section class="guide-layout">
+                <aside class="guide-sidebar">
+                    <div class="sidebar-heading">
+                        <span class="eyebrow">GAME LIBRARY</span>
+                        <h2>Choose a game</h2>
+                    </div>
+                    <label class="guide-search">
+                        <span>⌕</span>
+                        <input id="guide-search" type="search" placeholder="Buscar jogo..." autocomplete="off">
+                    </label>
+                    <nav id="game-list" class="game-list" aria-label="Selecionar jogo"></nav>
+                </aside>
+                <article class="guide-content" id="guide-content" aria-live="polite">
+                    <div class="guide-empty">
+                        <span class="empty-icon">⌖</span>
+                        <h2>Selecione um jogo</h2><p>Escolha um título na lista para consultar seu guia.</p>
+                    </div>
+                </article>
+            </section>
+        </main>
+    <footer class="footer">
+        <a href="base.html" class="logo">
+            <span class="logo-icon">G</span>
+            <span>GAME
+                <span class="highlight">HUB</span>
+            </span>
+        </a>
+        <p>Made by fans, for fans.</p>
+        <span>© 
+            <span id="current-year"></span> 
+            Game Hub.
+        </span>
+    </footer>
+    <script src="instructions.js"></script>
+    </body>
+</html>
