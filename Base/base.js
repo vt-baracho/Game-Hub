@@ -13,7 +13,7 @@ const games = [
     },
     {
         title: "Web May Cry",
-        description: "Uma experiência inspirada em jogos de ação e combate.",
+        description: "Uma experiência inspirada em jogos de ação e combate baseado em combos estilosos.",
         category: "Action",
         url: "../DMC/Web_May_Cry_v3.html"
     },
@@ -43,9 +43,15 @@ const games = [
     },
     {
         title: "Hyper Hedgehog",
-        description: "Entre numa versão fã, de um dos clássicos dos videogames",
+        description: "Acelere nessa versão fã, do primeiro clássico de um ouriço azul.",
         category: "Platform",
         url: "../hyper-hedgehog/index.html" // Mude aqui para o nome exato que você renomeou
+    },
+    {
+        title: "Retro Kong Arcade",
+        description: "Entre numa versão fã, de um dos clássicos dos videogames.",
+        category: "Platform",
+        url: "../Retro-Kong-Arcade/retro_kong_arcade.html" // Mude aqui para o nome exato que você renomeou
     }
 ];
 
