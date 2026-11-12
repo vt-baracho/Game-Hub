@@ -430,3 +430,22 @@ a {
         linear-gradient(135deg, #17283b, #11111a);
 }
 
+/* GAMEPAD SELECTION */
+
+.gamepad-selected {
+    outline: 3px solid #ff8c32 !important;
+    outline-offset: 5px !important;
+
+    box-shadow:
+        0 0 0 5px rgba(255, 140, 50, 0.2),
+        0 0 20px rgba(255, 140, 50, 0.4) !important;
+
+    transform: scale(1.03);
+
+    transition:
+        outline 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+
+    scroll-margin: 100px;
+}
