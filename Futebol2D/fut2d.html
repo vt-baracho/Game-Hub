@@ -238,4 +238,10 @@ cred:()=>`<h2>Creditos</h2><p>Chuteira Ki - jogo original em HTML5 Canvas.<br>Pe
 pause:()=>`<h2>Pausa</h2><button class=c onclick="resume()">Continuar</button><button class=c onclick="start()">Reiniciar partida</button><button class=c onclick="back='pause';screen('cfg')">Configuracoes</button><button class=c onclick="menu()">Voltar ao menu</button>`,
 res:()=>{const w=sc[0]===sc[1]?'Empate!':'Vitoria: '+TN[sc[0]>sc[1]?0:1];return`<h2>Fim de jogo</h2><h1 style="font-size:40px">${sc[0]} x ${sc[1]}</h1><p><b>${w}</b></p><p>Duracao: ${S.dur/60} min</p><table><tr><th><th>${TN[0]}<th>${TN[1]}</tr><tr><td>Chutes<td>${stat[0].sh}<td>${stat[1].sh}</tr><tr><td>Passes<td>${stat[0].pa}<td>${stat[1].pa}</tr><tr><td>Roubadas<td>${stat[0].st}<td>${stat[1].st}</tr></table><button class=c onclick="start()">Revanche</button><button class=c onclick="menu()">Menu</button>`}};
 screen('main');
-</script></body></html>
+
+
+</script>
+
+<script src="fut2d_gamepad.js"></script>
+
+</body></html>
