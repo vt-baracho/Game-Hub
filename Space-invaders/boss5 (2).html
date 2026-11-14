@@ -125,7 +125,7 @@ const NS=32,rad=i=>(i?Math.max(9,26-i*.56):30)*SC,spc=i=>Math.max(24,rad(i)*1.7)
 const PAL=[['#120a2e','#3d1d80','#a14dff','#f0c8ff'],['#06202e','#0f5f78','#43eaff','#d4fbff'],['#2b0810','#85182a','#ff5a40','#ffe2b0']];
 const NOMEF=['DESPERTAR','SINGULARIDADE','DEVORAÇÃO'];
 function resetCorpo(b,x,y=-100,ux=0,uy=1){let px=x,py=y;b.seg.forEach((s,i)=>{if(i){px-=ux*spc(i);py-=uy*spc(i);}s.x=s.cx=px;s.y=s.cy=py;s.a=Math.atan2(uy,ux);});}   // cadeia alinhada atrás de (x,y), contra a direção do movimento
-function novoBoss(){const hp=dupla?1200:900,b={hp,max:hp,ph:1,t:0,seg:Array.from({length:NS},()=>({x:0,y:0,cx:0,cy:0,a:0})),st:'enter',mode:'slither',atk:'',cd:1.8,at:0,q:[],len:0,hit:0,jaw:0,tr:0,dives:0,lx:400,m:0,last:'',amb:1.5,mt:0,sd:0,ex:0,sc:1.5,sct:1.5,pt:1,imune:false,dv:null,pun:0,wv:false,lz:[],hin:false,lzd:false,hold:0,fs:'',ft:0,nw:0,n:0,lw:0,la:0,fc:0,fan:0,fanT:0,ca:1.57,heal:false,hg:0};   // heal: escudo vampírico ativo (dano vira cura) · hg: brilho do último hit   // fc: ataques finais já usados · fan/fanT: leque periódico · ca: eixo do cone   // sct: escala-alvo do chefe · pt: escala-alvo das naves
+function novoBoss(){const hp=dupla?900:600,b={hp,max:hp,ph:1,t:0,seg:Array.from({length:NS},()=>({x:0,y:0,cx:0,cy:0,a:0})),st:'enter',mode:'slither',atk:'',cd:1.8,at:0,q:[],len:0,hit:0,jaw:0,tr:0,dives:0,lx:400,m:0,last:'',amb:1.5,mt:0,sd:0,ex:0,sc:1.5,sct:1.5,pt:1,imune:false,dv:null,pun:0,wv:false,lz:[],hin:false,lzd:false,hold:0,fs:'',ft:0,nw:0,n:0,lw:0,la:0,fc:0,fan:0,fanT:0,ca:1.57,heal:false,hg:0};   // heal: escudo vampírico ativo (dano vira cura) · hg: brilho do último hit   // fc: ataques finais já usados · fan/fanT: leque periódico · ca: eixo do cone   // sct: escala-alvo do chefe · pt: escala-alvo das naves
  SC=1.5;PSC=1;LAS=ROT=ZN=null;SW=[];resetCorpo(b,400);return b;}
 const angL=(a,b,t)=>a+(((b-a+Math.PI*3)%TAU)-Math.PI)*t;
 const dAng=(a,b)=>((a-b+Math.PI)%TAU+TAU)%TAU-Math.PI;
@@ -136,7 +136,8 @@ function hurt(n,p,head,kind){const b=B;if(b.st!=='fight'||b.tr>0||b.imune)return
  if(b.heal){const v=kind==='E'?(dupla?6:8):(dupla?2:3);   // ESCUDO VAMPÍRICO: 1 projétil = 3 HP (2 na dupla) · Charge = 8 HP (6 na dupla); não rende pontos
   b.hp=Math.min(b.max,b.hp+v);b.hg=.25;const h=b.seg[0];if(HT.length<24)HT.push({x:h.x+rnd(-40,40),y:h.y-50*SC/1.5,v,l:.9});boom(h.x+rnd(-30,30),h.y+rnd(-20,20),'#5dff9a',kind==='E'?10:4,120,.4);return;}   // ataque final: só a cabeça recebe dano
  b.hp-=n;b.hit=.08;if(p)p.pts+=head?5:2;
- while(b.pun<4&&b.hp<=b.max*(1-.2*(b.pun+1))){b.pun++;dropPU(b);}   // power-up a cada 20% de vida perdida
+ const passoPU=.05;   // power-up a cada 5% de vida perdida, nos dois modos (19 drops)
+while(b.pun<1/passoPU-1&&b.hp<=b.max*(1-passoPU*(b.pun+1))){b.pun++;dropPU(b);}
  const lim=b.ph===1?.66:b.ph===2?.33:0;
  if(lim&&b.hp<=b.max*lim){b.hp=b.max*lim;startTrans(b);}
  else if(b.hp<=0){b.hp=0;b.st='dead';b.mt=3.6;b.ex=0;b.sd=0;E=[];FL=[];Z=[];HOLE=null;LAS=ROT=ZN=null;SW=[];b.imune=false;b.heal=false;b.dv=null;b.lz=[];if(p)p.pts+=1250;flash=1;Som.rugido();}}
@@ -592,7 +593,7 @@ function overlay(tit,col,sub){c.fillStyle='rgba(0,0,0,.7)';c.fillRect(0,0,W,H);t
 
 function menu(){txt('CHEFE 5',W/2,110,60,'#ff4b45');txt('LEVIATÃ DO VAZIO',W/2,160,34,'#a14dff');
  txt('Batalha final · 3 fases · tiros do jogador base: 1 dano na cabeça, 0,4 no corpo',W/2,200,14,'#aaa','center',false);
- txt('MODO: '+(dupla?'DUPLA (7 vidas, 1200 HP)':'SOLO (5 vidas, 900 HP)')+'   [botão MODO ou teclas 1 / 2]',W/2,260,18,'#ffe600','center',false);
+ txt('MODO: '+(dupla?'DUPLA (7 vidas, 900 HP)':'SOLO (5 vidas, 600 HP)')+'   [botão MODO ou teclas 1 / 2]',W/2,260,18,'#ffe600','center',false);
  txt('CONTROLES — P1 WASD+G · P2 ←↑↓→+L',W/2,292,16,'#4ff','center',false);
  for(let i=0;i<2;i++)nave(300+i*130,350,CFG[i],false,1.4);
  if(Math.floor(T*2)%2===0)txt('Aperte Enter (ou clique) para lutar',W/2,450,20,'#39ff14');}
