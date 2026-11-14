@@ -177,7 +177,7 @@ function begin(b){const ph=b.ph,k0=b.n++;let n;
  else if(n==='dev'){b.imune=true;Q(.3,()=>zn(1,2.6,'dev'));Q(3.9,()=>zn(1,2.4,'dev'));b.len=7.2;}
  else if(n==='xplo'){b.imune=true;Q(.3,()=>zn(3,3.2,'xplo'));b.len=5.2;}
  else if(n==='dive'){b.imune=true;b.dives=ph===3?5:4;b.hold=0;b.lz=[];aim(b);}   // fase 2: 4 investidas sem laser residual · fase 3: 5 com laser   // imune do início ao fim das 5 investidas (endAtk desliga)
- else if(n==='vl'){b.imune=true;LAS={c:0,s:'move',t:0,x:ph===3?rnd(300,500):rnd(130,670),vw:ph===3?860:520,wl:[],done:false};b.mode='vl';}
+ else if(n==='vl'){LAS={c:0,s:'move',t:0,x:ph===3?rnd(300,500):rnd(130,670),vw:ph===3?860:520,wl:[],done:false};b.mode='vl';}
  else if(n==='guarda')startGuarda(b);
  else if(n==='cone')startCone(b);
  else if(n==='final')startFinal(b);
@@ -221,7 +221,7 @@ function updZN(dt){const Zn=ZN;if(!Zn)return;Zn.t+=dt;
  if(Zn.t>=Zn.tel+.9)ZN=null;}
 
 // BURACO NEGRO FINAL (fase 3): centro da arena, chefe imune e se cura → explode → 4 ondas em anel que expandem e recuam (cada uma com um vão)
-function startFinal(b){b.mode='final';b.imune=true;b.fs='sum';b.ft=0;b.nw=0;HOLE={x:400,y:400,r:0,s:'grow',t:0,a:0,e:0,cv:99,R:85};Som.rugido();Som.carga(5.4);}
+function startFinal(b){b.mode='final';b.fs='sum';b.ft=0;b.nw=0;HOLE={x:400,y:400,r:0,s:'grow',t:0,a:0,e:0,cv:99,R:85};Som.rugido();Som.carga(5.4);}
 function spawnWave(){const p=nearest(400),q=hb(p),g=Math.atan2(q.y+q.h/2-400,q.x+q.w/2-400)+rnd(-.35,.35);SW.push({r:30,d:1,g,gw:.5});Som.impacto();}
 function updFinal(b,dt){b.ft+=dt;
  if(b.fs==='sum'){b.hp=Math.min(b.max,b.hp+b.max*.012*dt);   // ≈ +6% da vida em 5 s
