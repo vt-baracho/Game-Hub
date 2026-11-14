@@ -220,11 +220,11 @@ function updZN(dt){const Zn=ZN;if(!Zn)return;Zn.t+=dt;
   for(const p of vivos()){const q=hb(p),cx=q.x+q.w/2,cy=q.y+q.h/2;if(!Zn.cs.some(a=>Math.hypot(cx-a.x,cy-a.y)<=a.r))dano(p);}}
  if(Zn.t>=Zn.tel+.9)ZN=null;}
 
-// BURACO NEGRO FINAL (fase 3): centro da arena, chefe imune e se cura → explode → 4 ondas em anel que expandem e recuam (cada uma com um vão)
+// BURACO NEGRO FINAL (fase 3): centro da arena; sem cura durante a carga → explode → 4 ondas em anel que expandem e recuam (cada uma com um vão)
 function startFinal(b){b.mode='final';b.fs='sum';b.ft=0;b.nw=0;HOLE={x:400,y:400,r:0,s:'grow',t:0,a:0,e:0,cv:99,R:85};Som.rugido();Som.carga(5.4);}
 function spawnWave(){const p=nearest(400),q=hb(p),g=Math.atan2(q.y+q.h/2-400,q.x+q.w/2-400)+rnd(-.35,.35);SW.push({r:30,d:1,g,gw:.5});Som.impacto();}
 function updFinal(b,dt){b.ft+=dt;
- if(b.fs==='sum'){b.hp=Math.min(b.max,b.hp+b.max*.012*dt);   // ≈ +6% da vida em 5 s
+ if(b.fs==='sum'){
   if(b.ft>=5.4){b.fs='wave';b.ft=0;b.imune=false;b.mode='slither';if(HOLE)HOLE.s='shrink';boom(400,400,PAL[2][3],70,420,1.1);shake=.8;flash=.7;Som.rugido();}}
  else{while(b.nw<4&&b.ft>=b.nw*1.1){spawnWave();b.nw++;}if(b.nw>=4&&!SW.length)endAtk(b);}}
 function updSW(dt){for(const w of SW){w.r+=w.d*340*dt;if(w.d>0&&w.r>=620)w.d=-1;}
